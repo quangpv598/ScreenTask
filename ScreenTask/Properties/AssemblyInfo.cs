@@ -5,13 +5,13 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ScreenTask")]
-[assembly: AssemblyDescription("Screen sharing made easy")]
+[assembly: AssemblyTitle("AppRealtime")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eslam Hamouda")]
-[assembly: AssemblyProduct("ScreenTask v1.1")]
-[assembly: AssemblyCopyright("Copyright ©  Eslam Hamouda 2014-2020")]
-[assembly: AssemblyTrademark("Eslam Hamouda")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("")]
+[assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 

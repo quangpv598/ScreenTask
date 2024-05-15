@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ScreenTask
+namespace AppRealtime
 {
     [Serializable]
     public class AppSettings

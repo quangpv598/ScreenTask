@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <IP>127.0.0.1</IP>
+  <Port>54653</Port>
+  <ScreenshotsSpeed>500</ScreenshotsSpeed>
+  <IsPrivateSession>false</IsPrivateSession>
+  <Username>admin</Username>
+  <Password>admin@123</Password>
+  <SelectedScreenIndex>0</SelectedScreenIndex>
+  <IsShowMouseEnabled>true</IsShowMouseEnabled>
+  <IsAutoStartServerEnabled>false</IsAutoStartServerEnabled>
+  <IsStartMinimizedEnabled>false</IsStartMinimizedEnabled>
+  <ImageQuality>100</ImageQuality>
+  <AllowPublicAccess>true</AllowPublicAccess>
+</AppSettings>
