@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
 using System.Windows.Media.Media3D;
 
 namespace AppRealtime
@@ -28,10 +29,24 @@ namespace AppRealtime
                 SourceOptions = new SourceOptions
                 {
                     RecordingSources = sources
-                }
+                },
+                //OutputOptions = new OutputOptions
+                //{
+                //    RecorderMode = RecorderMode.Video,
+                //    //This sets a custom size of the video output, in pixels.
+                //    OutputFrameSize = new ScreenSize(2560,1440),
+                //    //Stretch controls how the resizing is done, if the new aspect ratio differs.
+                //    Stretch = StretchMode.Uniform,
+                //},
             };
 
             _rec = Recorder.CreateRecorder(options);
+            _rec.OnRecordingFailed += _rec_OnRecordingFailed;
+        }
+
+        private void _rec_OnRecordingFailed(object sender, RecordingFailedEventArgs e)
+        {
+            Console.WriteLine(e.Error.ToString());
         }
 
         public async Task RunAsync()
@@ -40,7 +55,7 @@ namespace AppRealtime
             {
                 try
                 {
-                    int maxVideoSeconds = (int)TimeSpan.FromSeconds(60).TotalMilliseconds;
+                    int maxVideoSeconds = (int)TimeSpan.FromSeconds(10).TotalMilliseconds;
 
                     if (!Directory.Exists("Videos"))
                     {
@@ -51,11 +66,14 @@ namespace AppRealtime
                     string videoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos", fileName);
 
                     Console.WriteLine("Record:" + videoPath);
+
                     _rec.Record(videoPath);
 
                     await Task.Delay(maxVideoSeconds);
 
                     _rec.Stop();
+
+                    await WaitUntil(() => _rec.Status == RecorderStatus.Idle);
 
                     _ = Task.Run(async () =>
                     {
@@ -86,7 +104,7 @@ namespace AppRealtime
                                         break;
                                     }
                                 }
-                                catch { }
+                                catch (Exception ex) { }
                             }
                         }
                         finally
@@ -100,6 +118,25 @@ namespace AppRealtime
                     Console.WriteLine(ex.ToString());
                 }
             }
+        }
+
+        /// <summary>
+        /// Blocks until condition is true or timeout occurs.
+        /// </summary>
+        /// <param name="condition">The break condition.</param>
+        /// <param name="frequency">The frequency at which the condition will be checked.</param>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns></returns>
+        private static async Task WaitUntil(Func<bool> condition, int frequency = 25, int timeout = -1)
+        {
+            var waitTask = Task.Run(async () =>
+            {
+                while (!condition()) await Task.Delay(frequency);
+            });
+
+            if (waitTask != await Task.WhenAny(waitTask,
+                    Task.Delay(timeout)))
+                throw new TimeoutException();
         }
     }
 }

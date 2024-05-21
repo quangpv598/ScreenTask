@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-	<Host>https://winmedia1.uro-solution.info/api/Upload/UploadFiles</Host>
-	<IP>127.0.0.1</IP>
+	<Host>http://192.168.2.3:5000/api/Upload/UploadFiles</Host>
+	<IP>192.168.2.3</IP>
 	<Port>54653</Port>
 	<ScreenshotsSpeed>500</ScreenshotsSpeed>
 	<IsPrivateSession>false</IsPrivateSession>
