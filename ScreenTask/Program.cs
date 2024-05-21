@@ -21,87 +21,22 @@ namespace ScreenTask
 {
     static class Program
     {
-
-        private static AppSettings _currentSettings = null;
+        private static ScreenRecorder _screenRecorder;
 
         static void Main()
         {
             ScreenTask screenTask = new ScreenTask();
             screenTask.LoadSettings();
-            _currentSettings = screenTask.CurrentSettings;
+
+            _screenRecorder = new ScreenRecorder(screenTask.CurrentSettings); 
 
             Task.Run(() =>
             {
                 _ = screenTask.StartTaskAsync();
             });
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                while (true)
-                {
-                    const int maxVideoSeconds = 10;
-
-                    if (!Directory.Exists("Videos"))
-                    {
-                        Directory.CreateDirectory("Videos");
-                    }
-                    var now = ServerTimeHelper.GetUnixTimeSeconds();
-                    string fileName = $"{now}_{now + maxVideoSeconds}.mp4";
-
-                    string workingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Captura");
-                    string output = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos", fileName);
-
-                    Process proc = new Process();
-                    proc.StartInfo.FileName = Path.Combine(workingDirectory, "captura-cli.exe");
-                    proc.StartInfo.Arguments = $"start --aq 0 --vq 30 --cursor --keys --framerate 5 --length {maxVideoSeconds} --encoder sharpavi:0 --file {output}";
-                    proc.StartInfo.WorkingDirectory = workingDirectory;
-                    proc.StartInfo.CreateNoWindow = true;
-                    proc.StartInfo.UseShellExecute = false;
-                    proc.StartInfo.RedirectStandardOutput = true;
-                    proc.StartInfo.RedirectStandardError = true;
-                    proc.Start();
-                    string res = proc.StandardOutput.ReadToEnd();
-                    proc.StandardOutput.Close();
-                    proc.Close();
-
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            const int MAX_RETRIES = 5;
-                            for (int i = 0; i < MAX_RETRIES; i++)
-                            {
-                                if (i >= MAX_RETRIES)
-                                {
-                                    break;
-                                }
-
-                                try
-                                {
-                                    var client = new HttpClient();
-                                    var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.Host);
-                                    request.Headers.Add("accept", "*/*");
-                                    var content = new MultipartFormDataContent();
-                                    content.Add(new StreamContent(File.OpenRead(output)), "file", output);
-                                    content.Add(new StringContent($"{DateTime.Now.ToString("yyyy-MM-dd")}"), "createdDate");
-                                    content.Add(new StringContent(_currentSettings.IP), "comName");
-                                    request.Content = content;
-                                    var response = await client.SendAsync(request);
-                                    response.EnsureSuccessStatusCode();
-                                    if ((await response.Content.ReadAsStringAsync()).Contains("Files uploaded successfully"))
-                                    {
-                                        break;
-                                    }
-                                }
-                                catch { }
-                            }
-                        }
-                        finally
-                        {
-                            File.Delete(output);
-                        }
-                        
-                    });
-                }
+                await _screenRecorder.RunAsync();
             });
 
             Console.ReadLine();
