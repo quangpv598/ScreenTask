@@ -3,6 +3,9 @@
 	<Host>http://192.168.2.3:5000/api/Upload/UploadFiles</Host>
 	<IP>192.168.2.3</IP>
 	<Port>54653</Port>
+	<FrameHeight>1440</FrameHeight>
+	<FrameWidth>2560</FrameWidth>
+	<VideoDuration>60</VideoDuration>
 	<ScreenshotsSpeed>500</ScreenshotsSpeed>
 	<IsPrivateSession>false</IsPrivateSession>
 	<Username>admin</Username>

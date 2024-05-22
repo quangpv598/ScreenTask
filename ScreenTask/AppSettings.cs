@@ -12,6 +12,9 @@ namespace AppRealtime
         public string Host { get; set; }
         public string IP { get; set; }
         public int Port { get; set; }
+        public int FrameHeight { get; set; }
+        public int FrameWidth { get; set; }
+        public int VideoDuration { get; set; } // seconds
         public int ScreenshotsSpeed { get; set; }
         public bool IsPrivateSession { get; set; }
         public string Username { get; set; }

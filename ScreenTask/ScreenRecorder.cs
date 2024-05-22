@@ -30,14 +30,14 @@ namespace AppRealtime
                 {
                     RecordingSources = sources
                 },
-                //OutputOptions = new OutputOptions
-                //{
-                //    RecorderMode = RecorderMode.Video,
-                //    //This sets a custom size of the video output, in pixels.
-                //    OutputFrameSize = new ScreenSize(2560,1440),
-                //    //Stretch controls how the resizing is done, if the new aspect ratio differs.
-                //    Stretch = StretchMode.Uniform,
-                //},
+                OutputOptions = new OutputOptions
+                {
+                    RecorderMode = RecorderMode.Video,
+                    //This sets a custom size of the video output, in pixels.
+                    OutputFrameSize = new ScreenSize(_appSettings.FrameWidth, _appSettings.FrameHeight),
+                    //Stretch controls how the resizing is done, if the new aspect ratio differs.
+                    Stretch = StretchMode.Uniform,
+                },
             };
 
             _rec = Recorder.CreateRecorder(options);
@@ -55,7 +55,7 @@ namespace AppRealtime
             {
                 try
                 {
-                    int maxVideoSeconds = (int)TimeSpan.FromSeconds(10).TotalMilliseconds;
+                    int maxVideoSeconds = (int)TimeSpan.FromSeconds(_appSettings.VideoDuration).TotalMilliseconds;
 
                     if (!Directory.Exists("Videos"))
                     {
@@ -118,6 +118,18 @@ namespace AppRealtime
                     Console.WriteLine(ex.ToString());
                 }
             }
+        }
+
+        public void Stop()
+        {
+            try
+            {
+                if (_rec != null)
+                {
+                    _rec.Stop();
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
         }
 
         /// <summary>

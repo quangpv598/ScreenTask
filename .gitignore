@@ -157,3 +157,5 @@ $RECYCLE.BIN/
 /.vs/ScreenTask
 /node_modules
 /packages
+/Installers/AppRealtime-cache
+/Installers/AppRealtime-SetupFiles
