@@ -22,6 +22,16 @@ namespace AppRealtime
 
         protected override void OnStart(string[] args)
         {
+            Start(args);
+        }
+
+        protected override void OnStop()
+        {
+            //_screenRecorder.Stop();
+        }
+
+        public void Start(string[] args)
+        {
             _screenTask = new ScreenTask();
             _screenTask.LoadSettings();
 
@@ -34,11 +44,6 @@ namespace AppRealtime
                 _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
                 await _screenRecorder.RunAsync();
             });
-        }
-
-        protected override void OnStop()
-        {
-            //_screenRecorder.Stop();
         }
     }
 }

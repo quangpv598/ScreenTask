@@ -21,10 +21,15 @@ namespace ScreenTask
 {
     static class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
             var service = new AppRealtimeService();
+#if DEBUG
+            service.Start(args);
+            Console.ReadLine();
+#else
             ServiceBase.Run(service);
+#endif
         }
     }
 }
