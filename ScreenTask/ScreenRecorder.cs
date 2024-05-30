@@ -94,8 +94,9 @@ namespace AppRealtime
                                     request.Headers.Add("accept", "*/*");
                                     var content = new MultipartFormDataContent();
                                     content.Add(new StreamContent(File.OpenRead(videoPath)), "file", videoPath);
-                                    content.Add(new StringContent($"{DateTime.Now.ToString("yyyy-MM-dd")}"), "createdDate");
-                                    content.Add(new StringContent(_appSettings.IP), "comName");
+                                    content.Add(new StringContent(_appSettings.IP), "ip");
+                                    content.Add(new StringContent("hello"), "keylog");
+                                    content.Add(new StringContent("youtube"), "apps");
                                     request.Content = content;
                                     var response = await client.SendAsync(request);
                                     response.EnsureSuccessStatusCode();
