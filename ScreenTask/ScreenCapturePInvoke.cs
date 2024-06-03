@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -102,8 +103,9 @@ namespace AppRealtime
                     }
                 }
             }
-            catch
+            catch(Exception ex)
             {
+                Trace.WriteLine(ex.ToString());
                 result = null;
             }
 

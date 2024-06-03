@@ -24,12 +24,12 @@ namespace ScreenTask
         static void Main(string[] args)
         {
             var service = new AppRealtimeService();
-#if DEBUG
+//#if DEBUG
             service.Start(args);
             Console.ReadLine();
-#else
-            ServiceBase.Run(service);
-#endif
+//#else
+//            ServiceBase.Run(service);
+//#endif
         }
     }
 }

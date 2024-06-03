@@ -71,7 +71,7 @@ namespace AppRealtime
             }
             catch (Exception ex)
             {
-                Log("Error! : " + ex.Message);
+                Log("Error! : " + ex.ToString());
             }
         }
 
@@ -98,6 +98,7 @@ namespace AppRealtime
             serv.Prefixes.Clear();
             //serv.Prefixes.Add("http://localhost:" + numPort.Value.ToString() + "/");
             //serv.Prefixes.Add("http://*:" + numPort.Value.ToString() + "/"); // Uncomment this to Allow Public IP Over Internet. [Commented for Security Reasons.]
+
             serv.Prefixes.Add(url + "/");
             serv.Start();
             Log("Server Started Successfully!");
@@ -205,6 +206,8 @@ namespace AppRealtime
                         
                      */
 
+                    Log(ex.ToString());
+
                 }
 
                 ctx.Response.Close();
@@ -222,35 +225,43 @@ namespace AppRealtime
         }
         private void TakeScreenshot(bool captureMouse)
         {
-            ImageCodecInfo jpgEncoder = GetEncoder(ImageFormat.Jpeg);
-
-            var encoderQuality = System.Drawing.Imaging.Encoder.Quality;
-            var encoderParam = new EncoderParameter(encoderQuality, _currentSettings.ImageQuality);
-            var encoderParams = new EncoderParameters(1);
-            encoderParams.Param[0] = encoderParam;
-            if (captureMouse)
+            try
             {
-                var bmp = ScreenCapturePInvoke.CaptureFullScreen(true);
-                rwl.AcquireWriterLock(Timeout.Infinite);
-                bmp.Save(Application.StartupPath + "/WebServer" + "/ScreenTask.jpg", jpgEncoder, encoderParams);
-                rwl.ReleaseWriterLock();
+                ImageCodecInfo jpgEncoder = GetEncoder(ImageFormat.Jpeg);
 
-                bmp.Dispose();
-                bmp = null;
-                return;
-            }
-
-            Rectangle bounds = Screen.AllScreens[_currentSettings.SelectedScreenIndex].Bounds;
-            using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
-            {
-                using (Graphics g = Graphics.FromImage(bitmap))
+                var encoderQuality = System.Drawing.Imaging.Encoder.Quality;
+                var encoderParam = new EncoderParameter(encoderQuality, _currentSettings.ImageQuality);
+                var encoderParams = new EncoderParameters(1);
+                encoderParams.Param[0] = encoderParam;
+                if (captureMouse)
                 {
-                    g.CopyFromScreen(new Point(bounds.X, bounds.Y), Point.Empty, bounds.Size);
-                }
-                rwl.AcquireWriterLock(Timeout.Infinite);
+                    var bmp = ScreenCapturePInvoke.CaptureFullScreen(true);
+                    rwl.AcquireWriterLock(Timeout.Infinite);
+                    bmp.Save(Application.StartupPath + "/WebServer" + "/ScreenTask.jpg", jpgEncoder, encoderParams);
+                    rwl.ReleaseWriterLock();
 
-                bitmap.Save(Application.StartupPath + "/WebServer" + "/ScreenTask.jpg", jpgEncoder, encoderParams);
-                rwl.ReleaseWriterLock();
+                    bmp.Dispose();
+                    bmp = null;
+                    return;
+                }
+
+                Rectangle bounds = Screen.AllScreens[_currentSettings.SelectedScreenIndex].Bounds;
+                using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
+                {
+                    using (Graphics g = Graphics.FromImage(bitmap))
+                    {
+                        g.CopyFromScreen(new Point(bounds.X, bounds.Y), Point.Empty, bounds.Size);
+                    }
+                    rwl.AcquireWriterLock(Timeout.Infinite);
+
+                    bitmap.Save(Application.StartupPath + "/WebServer" + "/ScreenTask.jpg", jpgEncoder, encoderParams);
+                    rwl.ReleaseWriterLock();
+                }
+            }
+            catch (Exception ex)
+            {
+
+                Trace.WriteLine(ex.ToString());
             }
         }
 
@@ -389,6 +400,7 @@ namespace AppRealtime
         private void Log(string text)
         {
             Console.WriteLine(DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString() + " : " + text);
+            Trace.WriteLine(text);
         }
 
         public void SaveSettings()
@@ -403,7 +415,7 @@ namespace AppRealtime
             }
             catch (Exception ex)
             {
-
+                Log(ex.ToString());
             }
         }
 
@@ -422,7 +434,7 @@ namespace AppRealtime
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to load local appsettings.xml file.\r\n{ex.Message}");
+                Log($"Failed to load local appsettings.xml file.\r\n{ex.ToString()}");
             }
         }
     }
