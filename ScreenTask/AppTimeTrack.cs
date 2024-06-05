@@ -34,8 +34,8 @@ namespace AppRealtime
         public static List<MultiAppTime> AppTimes { get; private set; } = new List<MultiAppTime>();
 
         [DllImport("user32.dll")]
-        private static extern IntPtr GetWindowText(IntPtr hWnd, StringBuilder textOut, int count); 
-        
+        private static extern IntPtr GetWindowText(IntPtr hWnd, StringBuilder textOut, int count);
+
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
 
@@ -46,7 +46,7 @@ namespace AppRealtime
             IntPtr handle = GetForegroundWindow();
             StringBuilder title = new StringBuilder(MAX_STRING_BUILDER);
             GetWindowText(handle, title, MAX_STRING_BUILDER); //return value > 0 if success
-            return title.ToString();
+            return string.IsNullOrEmpty(title.ToString()) ? "Main Desktop" : title.ToString();
         }
 
         public static void SetNewAppTrack(long newId)
@@ -100,7 +100,7 @@ namespace AppRealtime
                     {
                         _lastAppTime.EndTime = ServerTimeHelper.GetUnixTimeSeconds();
                     }
-                    
+
                     lastWindowText = tempWindowText;
                     _lastAppTime = new AppTime
                     {

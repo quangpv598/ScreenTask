@@ -1665,7 +1665,7 @@ namespace AppRealtime
         {
             try
             {
-                Trace.Listeners.Clear();
+                //Trace.Listeners.Clear();
                 //TextWriterTraceListener twtl = new TextWriterTraceListener(KeyLogger.logName);
                 //twtl.Name = "TextLogger";
                 //twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
@@ -1675,7 +1675,7 @@ namespace AppRealtime
 
                 //Trace.Listeners.Add(twtl);
                 //Trace.Listeners.Add(ctl);
-                Trace.AutoFlush = true;
+                //Trace.AutoFlush = true;
 
 
                 // Start the clipboard
