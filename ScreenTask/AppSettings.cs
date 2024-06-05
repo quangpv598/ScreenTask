@@ -9,7 +9,12 @@ namespace AppRealtime
     [Serializable]
     public class AppSettings
     {
-        public string Host { get; set; }
+        public string VideoHost { get; set; }
+        public string ImageHost { get; set; }
+        public string FtpServer { get; set; }
+        public string FtpUserName { get; set; }
+        public string FtpPassword { get; set; }
+        public string DeviceToken { get; set; }
         public string IP { get; set; }
         public int Port { get; set; }
         public int FrameHeight { get; set; }

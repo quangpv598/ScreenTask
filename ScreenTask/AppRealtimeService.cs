@@ -21,7 +21,8 @@ namespace AppRealtime
             InitializeComponent();
 
             Trace.Listeners.Clear();
-            TextWriterTraceListener twtl = new TextWriterTraceListener("app.log");
+            string appLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.log");
+            TextWriterTraceListener twtl = new TextWriterTraceListener(appLogPath);
             twtl.Name = "TextLogger";
             twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
 
@@ -48,14 +49,14 @@ namespace AppRealtime
 
             Task.Run(() =>
             {
-                _ = _screenTask.StartTaskAsync();
+                _ = _screenTask.StartCaptureScreenAsync();
             });
 
-            Task.Run(async () =>
-            {
-                _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
-                await _screenRecorder.RunAsync();
-            });
+            //Task.Run(async () =>
+            //{
+            //    _screenRecorder = new ScreenRecorder(_screenTask.CurrentSettings);
+            //    await _screenRecorder.RunAsync();
+            //});
         }
     }
 }

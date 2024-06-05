@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 using AppRealtime;
 using System.Net.Http;
 using System.ServiceProcess;
+using System.Runtime.InteropServices;
 
 namespace ScreenTask
 {
@@ -24,12 +25,15 @@ namespace ScreenTask
         static void Main(string[] args)
         {
             var service = new AppRealtimeService();
-//#if DEBUG
+            //#if DEBUG
+            //            service.Start(args);
+            //            Console.ReadLine();
+            //#else
+            //            ServiceBase.Run(service);
+            //#endif
+  
             service.Start(args);
             Console.ReadLine();
-//#else
-//            ServiceBase.Run(service);
-//#endif
         }
     }
 }
