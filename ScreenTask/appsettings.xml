@@ -3,12 +3,9 @@
 	<CreateComputerHost>https://winmedia1.uro-solution.info/api/Upload/CreateComputer</CreateComputerHost>
 	<VideoHost>https://winmedia1.uro-solution.info/api/Upload/UploadVideos</VideoHost>
 	<ImageHost>https://winmedia1.uro-solution.info/api/Upload/UploadImage</ImageHost>
-	<FtpServer>ftp://103.163.119.198:21/</FtpServer>
-	<FtpUserName>ftp</FtpUserName>
-	<FtpPassword>Vanhieu12</FtpPassword>
 	<FrameHeight>1440</FrameHeight>
 	<FrameWidth>2560</FrameWidth>
-	<VideoDuration>60</VideoDuration>
+	<VideoDuration>10</VideoDuration>
 	<ScreenshotsSpeed>1000</ScreenshotsSpeed>
 	<ImageQuality>100</ImageQuality>
 	<ComputerName>PC1</ComputerName>

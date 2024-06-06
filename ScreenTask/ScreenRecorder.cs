@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -74,8 +75,11 @@ namespace AppRealtime
             {
                 try
                 {
+                    const string videoPathDirectory = "Temp";
+                    const string videoFormatFile = "mp4";
+
                     int maxVideoSeconds = (int)TimeSpan.FromSeconds(_appSettings.VideoDuration).TotalMilliseconds;
-                    string videoFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos");
+                    string videoFolder = Path.GetTempPath();
                     if (!Directory.Exists(videoFolder))
                     {
                         Directory.CreateDirectory(videoFolder);
@@ -85,99 +89,116 @@ namespace AppRealtime
                     KeyLogger.WriteNewLogSession(now);
                     AppTimeTrack.SetNewAppTrack(now);
 
-                    string fileName = $"{now}_{now + maxVideoSeconds}.mp4";
-                    string videoPath = Path.Combine(videoFolder, fileName);
+                    string fileName = Path.GetTempFileName().Replace(".tmp", ".mp4");
 
-                    Console.WriteLine("Record:" + videoPath);
-
-                    _rec.Record(videoPath);
+                    _rec.Record(fileName);
 
                     await Task.Delay(maxVideoSeconds);
 
                     _rec.Stop();
 
                     await WaitUntil(() => _rec.Status == RecorderStatus.Idle);
-                    var keyLogJsonPath = videoPath.Replace(".mp4", "_UserAction.json");
-                    var appsJsonPath = videoPath.Replace(".mp4", "_UserSession.json");
+                    string videoFileName = $"{now}_{ServerTimeHelper.GetUnixTimeSeconds()}.{videoFormatFile}";
+                    string videoPath = Path.Combine(videoFolder, videoFileName);
 
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            var keylog = new List<KeyLog>();
-                            var log = KeyLogger.KeyLogs.First(k => k.Id == now);
-                            if (log != null)
-                            {
-                                keylog = log.KeyLogCollection;
-                            }
+                    FileInfo file = new FileInfo(fileName);
+                    file.MoveTo(videoPath);
 
-                            var appTimes = new List<AppTime>();
-                            var appTime = AppTimeTrack.AppTimes.First(k => k.Id == now);
-                            if (appTime != null)
-                            {
-                                appTimes = appTime.Collection;
-                            }
+                    Trace.WriteLine("Record:" + videoPath);
 
-                            foreach (var app in appTimes)
-                            {
-                                if (app.EndTime == 0)
-                                {
-                                    app.EndTime = ServerTimeHelper.GetUnixTimeSeconds();
-                                }
-                            }
+                    var keyLogJsonPath = videoPath.Replace($".{videoFormatFile}", "_UserAction.json");
+                    var appsJsonPath = videoPath.Replace($".{videoFormatFile}", "_UserSession.json");
 
-                            var appsJson = JsonConvert.SerializeObject(appTimes);
-                            File.WriteAllText(appsJsonPath, appsJson);
-                            var keyLogJson = JsonConvert.SerializeObject(keylog);
-                            File.WriteAllText(keyLogJsonPath, keyLogJson);
-
-                            const int MAX_RETRIES = 5;
-                            for (int i = 0; i < MAX_RETRIES; i++)
-                            {
-                                if (i >= MAX_RETRIES)
-                                {
-                                    break;
-                                }
-
-                                try
-                                {
-                                    var client = new HttpClient();
-                                    var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.VideoHost);
-                                    request.Headers.Add("accept", "*/*");
-                                    var content = new MultipartFormDataContent();
-                                    content.Add(new StreamContent(File.OpenRead(videoPath)), "Video", Path.GetFileName(videoPath));
-                                    content.Add(new StreamContent(File.OpenRead(keyLogJsonPath)), "UserAction", Path.GetFileName(keyLogJsonPath));
-                                    content.Add(new StreamContent(File.OpenRead(appsJsonPath)), "UserSession", Path.GetFileName(appsJsonPath));
-                                    content.Add(new StringContent(Globals.UUID), "token");
-                                    request.Content = content;
-                                    var response = await client.SendAsync(request);
-                                    response.EnsureSuccessStatusCode();
-                                    string result = await response.Content.ReadAsStringAsync();
-                                    if (result.Contains("successfully"))
-                                    {
-                                        Console.WriteLine("Video uploaded successfully");
-                                        break;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log(ex.ToString());
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            File.Delete(videoPath);
-                            File.Delete(keyLogJsonPath);
-                            File.Delete(appsJsonPath);
-                        }
-                    });
+                    UploadVideos(now, videoPath, appsJsonPath, keyLogJsonPath);
                 }
                 catch (Exception ex)
                 {
                     Log(ex.ToString());
                 }
             }
+        }
+
+        private void UploadVideos(long id, string videoPath, string appsJsonPath, string keyLogJsonPath)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var keylog = new List<KeyLog>();
+                    var log = KeyLogger.KeyLogs.First(k => k.Id == id);
+                    if (log != null)
+                    {
+                        keylog = log.KeyLogCollection;
+                    }
+
+                    var appTimes = new List<AppTime>();
+                    var appTime = AppTimeTrack.AppTimes.First(k => k.Id == id);
+                    if (appTime != null)
+                    {
+                        appTimes = appTime.Collection;
+                    }
+
+                    foreach (var app in appTimes)
+                    {
+                        if (app.EndTime == 0)
+                        {
+                            app.EndTime = ServerTimeHelper.GetUnixTimeSeconds();
+                        }
+                    }
+
+                    var appsJson = JsonConvert.SerializeObject(appTimes);
+                    File.WriteAllText(appsJsonPath, appsJson);
+                    var keyLogJson = JsonConvert.SerializeObject(keylog);
+                    File.WriteAllText(keyLogJsonPath, keyLogJson);
+
+                    Trace.WriteLine(appsJson);
+                    Trace.WriteLine(keyLogJson);
+
+                    const int MAX_RETRIES = 5;
+                    for (int i = 0; i < MAX_RETRIES; i++)
+                    {
+                        if (i >= MAX_RETRIES)
+                        {
+                            break;
+                        }
+
+                        try
+                        {
+                            var client = new HttpClient();
+                            var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.VideoHost);
+                            request.Headers.Add("accept", "*/*");
+                            var content = new MultipartFormDataContent();
+                            content.Add(new StreamContent(File.OpenRead(videoPath)), "Video", Path.GetFileName(videoPath));
+                            content.Add(new StreamContent(File.OpenRead(keyLogJsonPath)), "UserAction", Path.GetFileName(keyLogJsonPath));
+                            content.Add(new StreamContent(File.OpenRead(appsJsonPath)), "UserSession", Path.GetFileName(appsJsonPath));
+                            content.Add(new StringContent(Globals.UUID), "token");
+                            request.Content = content;
+                            var response = await client.SendAsync(request);
+                            response.EnsureSuccessStatusCode();
+                            string result = await response.Content.ReadAsStringAsync();
+                            if (result.Contains("successfully"))
+                            {
+                                Console.WriteLine("Video uploaded successfully");
+                                break;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log(ex.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log(ex.ToString());
+                }
+                finally
+                {
+                    File.Delete(videoPath);
+                    File.Delete(keyLogJsonPath);
+                    File.Delete(appsJsonPath);
+                }
+            });
         }
 
         public void Stop()
