@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -27,7 +28,39 @@ namespace ScreenTask
 
         public const uint WM_COPYDATA = 0x004A;
 
-        public const string START_UP_SUBKEY_PATH = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        public static async Task<bool> IsOnline()
+        {
+            return IsConnectedToInternet() && await PingAsync();
+        }
+        private static async Task<bool> PingAsync()
+        {
+            try
+            {
+                Ping pingSender = new Ping();
+                PingReply reply = await pingSender.SendPingAsync("8.8.8.8");
+
+                return reply.Status == IPStatus.Success;
+
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        [DllImport("wininet.dll")]
+        private extern static bool InternetGetConnectedState(out int Description, int ReservedValue);
+        private static bool IsConnectedToInternet()
+        {
+            int Desc;
+            bool hasInternet = InternetGetConnectedState(out Desc, 0);
+
+            if (!hasInternet)
+            {
+                return false;
+            }
+            return true;
+        }
     }
   
 }

