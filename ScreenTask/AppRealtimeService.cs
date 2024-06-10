@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace AppRealtime
         public AppRealtimeService()
         {
             Trace.Listeners.Clear();
-            string appLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.log");
+            string appLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"app.log");
             TextWriterTraceListener twtl = new TextWriterTraceListener(appLogPath);
             twtl.Name = "TextLogger";
             twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;

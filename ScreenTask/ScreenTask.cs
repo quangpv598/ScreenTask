@@ -22,7 +22,7 @@ namespace AppRealtime
 {
     public class ScreenTask
     {
-        private string SettingPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.xml");
+        private string SettingPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "appsettings.xml");
         private ReaderWriterLock rwl = new ReaderWriterLock();
         private AppSettings _currentSettings = new AppSettings();
         public AppSettings CurrentSettings { get { return _currentSettings; } }
@@ -78,7 +78,7 @@ namespace AppRealtime
                                     //Console.WriteLine(result);
                                     if (result.Contains("successfully"))
                                     {
-                                        Debug.WriteLine("Upload image");
+                                        //Debug.WriteLine("Upload image");
                                         break;
                                     }
                                 }

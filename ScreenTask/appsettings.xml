@@ -3,8 +3,8 @@
 	<CreateComputerHost>https://winmedia1.uro-solution.info/api/Upload/CreateComputer</CreateComputerHost>
 	<VideoHost>https://winmedia1.uro-solution.info/api/Upload/UploadVideos</VideoHost>
 	<ImageHost>https://winmedia1.uro-solution.info/api/Upload/UploadImage</ImageHost>
-	<FrameHeight>1440</FrameHeight>
-	<FrameWidth>2560</FrameWidth>
+	<FrameHeight>1080</FrameHeight>
+	<FrameWidth>1920</FrameWidth>
 	<VideoDuration>10</VideoDuration>
 	<ScreenshotsSpeed>1000</ScreenshotsSpeed>
 	<ImageQuality>100</ImageQuality>
