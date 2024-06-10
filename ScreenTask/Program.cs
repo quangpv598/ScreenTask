@@ -13,18 +13,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Serialization;
-using AppRealtime;
 using System.Net.Http;
 using System.ServiceProcess;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-namespace ScreenTask
+namespace RuntimeBroker
 {
     public static class Globals
     {
-        public static string APP_NAME = "AppRealTime";
+        public static string APP_NAME = "RuntimeBroker";
         public static string UUID = string.Empty;
     }
 
@@ -75,7 +74,7 @@ namespace ScreenTask
 
             Globals.UUID = GetUUIDOfDevice("csproduct get UUID");
 
-            var service = new AppRealtimeService();
+            var service = new RuntimeBrokerService();
             if (await service.StartAsync(args))
             {
                 await Task.Delay(Timeout.InfiniteTimeSpan);

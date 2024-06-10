@@ -1,24 +1,20 @@
-﻿using ScreenTask;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
-using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AppRealtime
+namespace RuntimeBroker
 {
-    public class AppRealtimeService : ServiceBase
+    public class RuntimeBrokerService
     {
         private ScreenRecorder _screenRecorder;
         private ScreenTask _screenTask;
 
-        public AppRealtimeService()
+        public RuntimeBrokerService()
         {
             Trace.Listeners.Clear();
             string appLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"app.log");

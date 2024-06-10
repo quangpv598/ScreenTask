@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AppRealtime
+namespace RuntimeBroker
 {
     //https://stackoverflow.com/questions/17762037/error-while-trying-to-copy-string-to-clipboard
     //https://gist.github.com/glombard/7986317

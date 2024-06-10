@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Media;
 using Task = System.Threading.Tasks.Task;
 
-namespace ScreenTask
+namespace RuntimeBroker
 {
     public static class AppUtils
     {

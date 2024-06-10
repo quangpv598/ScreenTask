@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using ScreenRecorderLib;
-using ScreenTask;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,7 +14,7 @@ using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Media3D;
 
-namespace AppRealtime
+namespace RuntimeBroker
 {
     public class SessionRecorder
     {

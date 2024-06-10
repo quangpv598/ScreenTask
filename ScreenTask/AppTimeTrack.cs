@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 
-namespace AppRealtime
+namespace RuntimeBroker
 {
     public class AppTime
     {

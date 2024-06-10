@@ -16,9 +16,8 @@ using System.Xml.Serialization;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Net.Http;
-using ScreenTask;
 
-namespace AppRealtime
+namespace RuntimeBroker
 {
     public class ScreenTask
     {

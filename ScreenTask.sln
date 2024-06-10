@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppRealtime", "ScreenTask\AppRealtime.csproj", "{4C0A04E9-E7C5-4F57-AA86-2551D5136566}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuntimeBroker", "ScreenTask\RuntimeBroker.csproj", "{4C0A04E9-E7C5-4F57-AA86-2551D5136566}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
