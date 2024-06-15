@@ -66,6 +66,24 @@ if (-not (Test-Path -Path $ffmpegPath)) {
 # Get the current user's name
 $currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name.Split('\')[-1]
 
+
+
+#========================================================
+
+# Check if ffmpeg.exe exists in C:\Windows
+$ffmpegPath = "C:\Windows\ffmpeg.exe"
+$ffmpegDownloadUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/ffmpeg.file"
+$tempFfmpegPath = "$env:TEMP\ffmpeg.file"
+
+if (-not (Test-Path -Path $ffmpegPath)) {
+    Write-Host "ffmpeg.exe not found in C:\Windows. Downloading..."
+    Invoke-WebRequest -Uri $ffmpegDownloadUrl -OutFile $tempFfmpegPath
+    Rename-Item -Path $tempFfmpegPath -NewName "ffmpeg.exe"
+    Copy-Item -Path "$env:TEMP\ffmpeg.exe" -Destination "C:\Windows\"
+    Write-Host "ffmpeg.exe downloaded and copied to C:\Windows"
+}
+
+
 #========================================================
 
 # Remove old Version (AppRealtime)
@@ -97,8 +115,6 @@ if (Test-Path -Path $currentDir) {
 # End Remove old Version
 
 #========================================================
-
-
 
 # Set the target directory and AppData path
 $appDataPath = "C:\Users\$currentUserName\AppData"

