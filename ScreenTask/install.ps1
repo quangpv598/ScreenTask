@@ -18,6 +18,51 @@ if ($currentPolicy -ne 'RemoteSigned') {
     Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 }
 
+#========================================================
+# Additional Step: Check and download ffmpeg.exe if not present
+$ffmpegPath = "C:\Windows\ffmpeg.exe"
+
+if (-not (Test-Path -Path $ffmpegPath)) {
+    Write-Host "ffmpeg.exe not found. Downloading..."
+    $ffmpegUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/ffmpeg.7z"
+    $ffmpegArchive = "$env:TEMP\ffmpeg-release-full.7z"
+    $ffmpegTempDir = "$env:TEMP\ffmpeg"
+
+    Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
+
+    # Download and install 7-Zip if not already installed
+    $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
+    if (-not (Test-Path -Path $sevenZipPath)) {
+        Write-Host "7-Zip not found. Downloading..."
+        $sevenZipInstallerUrl = "https://www.7-zip.org/a/7z1900-x64.msi"
+        $sevenZipInstaller = "$env:TEMP\7z1900-x64.msi"
+        Invoke-WebRequest -Uri $sevenZipInstallerUrl -OutFile $sevenZipInstaller
+        Start-Process -FilePath msiexec.exe -ArgumentList "/i", $sevenZipInstaller, "/quiet", "/norestart" -Wait
+    }
+
+    # Extract the ffmpeg .7z archive using 7-Zip
+    & "$sevenZipPath" x $ffmpegArchive -o$ffmpegTempDir -y
+
+    # Find ffmpeg.exe in the extracted directory
+    $ffmpegExe = Get-ChildItem -Path $ffmpegTempDir -Filter "ffmpeg.exe" -Recurse | Select-Object -First 1
+
+    if ($ffmpegExe) {
+        Copy-Item -Path $ffmpegExe.FullName -Destination $ffmpegPath
+        Write-Host "ffmpeg.exe downloaded and copied to C:\Windows."
+    } else {
+        Write-Host "Error: ffmpeg.exe not found in the downloaded archive."
+        exit 1
+    }
+
+    # Cleanup
+    Remove-Item -Path $ffmpegArchive -Force
+    Remove-Item -Path $ffmpegTempDir -Recurse -Force
+} else {
+    Write-Host "ffmpeg.exe is already present in C:\Windows."
+}
+#========================================================
+
+
 # Get the current user's name
 $currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name.Split('\')[-1]
 
