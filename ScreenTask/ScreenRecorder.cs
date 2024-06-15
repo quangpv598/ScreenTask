@@ -128,7 +128,7 @@ namespace RuntimeBroker
                             KeyLogger.WriteNewLogSession(now);
                             AppTimeTrack.SetNewAppTrack(now);
 
-                            string fileName = Path.GetTempFileName().Replace(".tmp", $".{videoFormatFile}");
+                            string fileName = AppUtils.GetTempFile().Replace(".tmp", $".{videoFormatFile}");
 
                             _rec.Record(fileName);
 

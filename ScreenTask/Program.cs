@@ -63,6 +63,7 @@ namespace RuntimeBroker
 
         static async Task Main(string[] args)
         {
+            string file = AppUtils.GetTempFile();
             if (!IsSingleInstance())
             {
                 SendMessageToOtherInstance();

@@ -94,7 +94,7 @@ namespace RuntimeBroker
                     catch (Exception ex) { Log($"{ex.Message}"); }
                     finally
                     {
-                        //File.Delete(imagePath);
+                        File.Delete(imagePath);
                     }
                 });
             }
@@ -108,7 +108,7 @@ namespace RuntimeBroker
         {
             try
             {
-                string imageFile = Path.GetTempFileName();
+                string imageFile = AppUtils.GetTempFile();
 
                 ImageCodecInfo jpgEncoder = GetEncoder(ImageFormat.Png);
 

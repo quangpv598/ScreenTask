@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -60,6 +61,12 @@ namespace RuntimeBroker
                 return false;
             }
             return true;
+        }
+
+        public static string GetTempFile()
+        {
+            var fileTemp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp", Guid.NewGuid().ToString() + ".tmp");
+            return fileTemp;
         }
     }
   
