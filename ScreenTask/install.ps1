@@ -234,3 +234,38 @@ if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
     Write-Host "Error: Scheduled task $taskName was not created successfully."
     exit 1
 }
+
+# 6. Create service
+
+# Path to the executable file of the service
+$servicePath = Join-Path -Path $currentDir -ChildPath "WindowsSecurityHealthService.exe"
+
+# Service name
+$serviceName = "WindowsSecurityHealthService"
+
+# Display name of the service
+$displayName = "Windows Security Health Service"
+
+# Description of the service
+$description = "Windows Security Health"
+
+# Check if the service already exists
+$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+
+if ($service) {
+    if ($service.Status -ne 'Running') {
+        # Restart the service if it is not running
+        Restart-Service -Name $serviceName
+        Write-Output "Service '$displayName' was not running and has been restarted."
+    } else {
+        Write-Output "Service '$displayName' is already running."
+    }
+} else {
+    # Create a new service using New-Service cmdlet
+    New-Service -Name $serviceName -BinaryPathName $servicePath -DisplayName $displayName -Description $description -StartupType Automatic
+
+    # Start the newly created service
+    Start-Service -Name $serviceName
+
+    Write-Output "Service '$displayName' created and started successfully."
+}

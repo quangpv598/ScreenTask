@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-	<CreateComputerHost>https://winmedia1.uro-solution.info/api/Upload/CreateComputer</CreateComputerHost>
-	<VideoHost>https://winmedia1.uro-solution.info/api/Upload/UploadVideos</VideoHost>
-	<ImageHost>https://winmedia1.uro-solution.info/api/Upload/UploadImage</ImageHost>
+	<CreateComputerHost>http://192.168.1.67/api/Upload/CreateComputer</CreateComputerHost>
+	<VideoHost>http://192.168.1.67/api/Upload/UploadVideos</VideoHost>
+	<ImageHost>http://192.168.1.67/api/Upload/UploadImage</ImageHost>
 	<FrameHeight>1080</FrameHeight>
 	<FrameWidth>1920</FrameWidth>
 	<VideoDuration>10</VideoDuration>

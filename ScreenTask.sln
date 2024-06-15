@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuntimeBroker", "ScreenTask\RuntimeBroker.csproj", "{4C0A04E9-E7C5-4F57-AA86-2551D5136566}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsSecurityHealthService", "WindowsSecurityHealthService\WindowsSecurityHealthService.csproj", "{2879DF66-4082-4763-9D4C-2B699E2F0326}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,14 @@ Global
 		{4C0A04E9-E7C5-4F57-AA86-2551D5136566}.Release|Any CPU.Build.0 = Release|x64
 		{4C0A04E9-E7C5-4F57-AA86-2551D5136566}.Release|x64.ActiveCfg = Release|x64
 		{4C0A04E9-E7C5-4F57-AA86-2551D5136566}.Release|x64.Build.0 = Release|x64
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Debug|x64.Build.0 = Debug|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Release|x64.ActiveCfg = Release|Any CPU
+		{2879DF66-4082-4763-9D4C-2B699E2F0326}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

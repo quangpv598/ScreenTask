@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -44,6 +45,7 @@ namespace RuntimeBroker
 
             Trace.WriteLine("StartAsync");
 
+            string version = Assembly.GetEntryAssembly().GetName().Version.ToString();
 
             bool isSuccess = false;
             const int MAX_RETRIES = 5;
@@ -57,7 +59,7 @@ namespace RuntimeBroker
                 try
                 {
                     var client = new HttpClient();
-                    var request = new HttpRequestMessage(HttpMethod.Post, $"{_screenTask.CurrentSettings.CreateComputerHost}?ComputerName={_screenTask.CurrentSettings.ComputerName}&Token={Globals.UUID}&EmployeeName={_screenTask.CurrentSettings.EmployeeName}");
+                    var request = new HttpRequestMessage(HttpMethod.Post, $"{_screenTask.CurrentSettings.CreateComputerHost}?ComputerName={_screenTask.CurrentSettings.ComputerName}&Token={Globals.UUID}&EmployeeName={_screenTask.CurrentSettings.EmployeeName}&Version={version}");
                     request.Headers.Add("accept", "text/plain");
                     var response = await client.SendAsync(request);
                     response.EnsureSuccessStatusCode();

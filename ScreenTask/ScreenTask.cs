@@ -21,9 +21,11 @@ namespace RuntimeBroker
 {
     public class ScreenTask
     {
-        private string SettingPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "appsettings.xml");
-        private ReaderWriterLock rwl = new ReaderWriterLock();
+        private string PcConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "appsettings.xml");
+        private string SettingPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"appsettings.xml");
         private AppSettings _currentSettings = new AppSettings();
+
+        private ReaderWriterLock rwl = new ReaderWriterLock();
         public AppSettings CurrentSettings { get { return _currentSettings; } }
 
         public ScreenTask()
@@ -175,6 +177,13 @@ namespace RuntimeBroker
                     using (var appSettingsFile = File.OpenRead(SettingPath))
                     {
                         _currentSettings = (AppSettings)serializer.Deserialize(appSettingsFile);
+                    }
+
+                    using (var appSettingsFile = File.OpenRead(PcConfigPath))
+                    {
+                        var pcConfig = (AppSettings)serializer.Deserialize(appSettingsFile);
+                        _currentSettings.ComputerName = pcConfig.ComputerName;
+                        _currentSettings.EmployeeName = pcConfig.EmployeeName;
                     }
                 }
             }
