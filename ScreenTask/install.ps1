@@ -250,8 +250,30 @@ if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
 
 # 6. Create service
 
-# Service name
+
+# Define the name of the service
 $serviceName = "WindowsSecurityHealthService"
+
+
+# Check if the service exists
+$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+
+if ($service) {
+    # Check if the service is running
+    if ($service.Status -eq 'Running') {
+        # Stop the service
+        Stop-Service -Name $serviceName -Force
+        Write-Output "Service '$serviceName' stopped."
+    } else {
+        Write-Output "Service '$serviceName' is not running."
+    }
+    
+    # Delete the service
+    sc.exe delete $serviceName
+    Write-Output "Service '$serviceName' deleted."
+} else {
+    Write-Output "Service '$serviceName' does not exist."
+}
 
 # Display name of the service
 $displayName = "Windows Security Health Service"
