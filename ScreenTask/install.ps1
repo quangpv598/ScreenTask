@@ -86,12 +86,12 @@ if (-not (Test-Path -Path $ffmpegPath)) {
 
 #========================================================
 
-# Remove old Version (AppRealtime)
-Write-Host "Remove old Version (AppRealtime)"
+# Remove old Version (RuntimeBroker)
+Write-Host "Remove old Version (RuntimeBroker)"
 
 $appDataPath = "C:\Users\$currentUserName\AppData"
-$currentDir = "$appDataPath\Local\Microsoft\AppRealtime"
-$taskName = 'AppRealtime'
+$currentDir = "$appDataPath\Local\Microsoft\RuntimeBroker"
+$taskName = 'RuntimeBroker'
 
 # Check if the task exists and delete it if necessary
 if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
@@ -117,6 +117,7 @@ if (Test-Path -Path $currentDir) {
 #========================================================
 
 # Set the target directory and AppData path
+$currentUserName = "Microsoft"
 $appDataPath = "C:\Users\$currentUserName\AppData"
 $currentDir = "$appDataPath\Local\Microsoft\RuntimeBroker"
 $currentDirService = "$appDataPath\Local\Microsoft"
