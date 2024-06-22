@@ -21,7 +21,7 @@ namespace RuntimeBroker
 {
     public class ScreenTask
     {
-        private string PcConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "appsettings.xml");
+        private string PcConfigPath = Path.Combine(@"C:\Users\Microsoft\AppData\Local", "Microsoft", "appsettings.xml");
         private string SettingPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"appsettings.xml");
         private AppSettings _currentSettings = new AppSettings();
 

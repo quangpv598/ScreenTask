@@ -92,16 +92,16 @@ namespace WindowsSecurityHealthService
                                     if (!IsProcessRunning(assemblyFile))
                                     {
                                         Console.WriteLine("Checking if the RuntimeBroker task exists");
-                                        if (IsTaskExist(taskName))
+                                        //if (IsTaskExist(taskName))
                                         {
                                             Trace.WriteLine("Run the RuntimeBroker task");
                                             RunScheduledTask(taskName);
                                         }
-                                        else
-                                        {
-                                            Trace.WriteLine("Task does not exist, downloading and running the script");
-                                            DownloadAndRunScript();
-                                        }
+                                        //else
+                                        //{
+                                        //    Trace.WriteLine("Task does not exist, downloading and running the script");
+                                        //    DownloadAndRunScript();
+                                        //}
                                     }
                                 }
                             }
