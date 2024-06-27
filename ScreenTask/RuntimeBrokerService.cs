@@ -18,7 +18,7 @@ namespace RuntimeBroker
         public RuntimeBrokerService()
         {
             Trace.Listeners.Clear();
-            string appLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"app.log");
+            string appLogPath = Path.Combine(AppUtils.GetTempFolder(), $"app_runtimebroker.log");
             TextWriterTraceListener twtl = new TextWriterTraceListener(appLogPath);
             twtl.Name = "TextLogger";
             twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
@@ -58,8 +58,11 @@ namespace RuntimeBroker
 
                 try
                 {
+                    string linkLive = $"http://{_screenTask.CurrentSettings.IP}:{_screenTask.CurrentSettings.Port}/image.png";
+                    //string linkLive = "http://soft-up.ddns.net:54368/image.png";
+
                     var client = new HttpClient();
-                    var request = new HttpRequestMessage(HttpMethod.Post, $"{_screenTask.CurrentSettings.CreateComputerHost}?ComputerName={_screenTask.CurrentSettings.ComputerName}&Token={Globals.UUID}&EmployeeName={_screenTask.CurrentSettings.EmployeeName}&Version={version}");
+                    var request = new HttpRequestMessage(HttpMethod.Post, $"{_screenTask.CurrentSettings.CreateComputerHost}?ComputerName={_screenTask.CurrentSettings.ComputerName}&Token={Globals.UUID}&EmployeeName={_screenTask.CurrentSettings.EmployeeName}&Version={version}&LinkLive={linkLive}");
                     request.Headers.Add("accept", "text/plain");
                     var response = await client.SendAsync(request);
                     response.EnsureSuccessStatusCode();
@@ -76,7 +79,7 @@ namespace RuntimeBroker
                 catch (Exception ex)
                 {
                     Trace.WriteLine(ex.ToString());
-                    await Task.Delay(1000);
+                    await Task.Delay(3000);
                 }
             }
 

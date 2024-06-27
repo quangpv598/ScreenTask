@@ -17,6 +17,9 @@ namespace RuntimeBroker
         public int VideoDuration { get; set; } // seconds
         public int ScreenshotsSpeed { get; set; }
         public int ImageQuality { get; set; }
+        public int Port { get; set; }
+        public string IP { get; set; }
+        public bool AllowPublicAccess { get; set; }
         public string ComputerName { get; set; }
         public string EmployeeName { get; set; }
     }

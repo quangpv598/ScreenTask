@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Windows;
@@ -61,6 +62,11 @@ namespace RuntimeBroker
                 return false;
             }
             return true;
+        }
+
+        public static string GetTempFolder()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp");
         }
 
         public static string GetTempFile()
