@@ -38,11 +38,11 @@ namespace RuntimeBroker
         }
         private async Task CaptureScreenEvery(int msec)
         {
-            while (true)
-            {
-                TakeScreenshot();
-                await Task.Delay(msec);
-            }
+            //while (true)
+            //{
+            //    TakeScreenshot();
+            //    await Task.Delay(msec);
+            //}
         }
 
         private void UploadImage(string imagePath)
