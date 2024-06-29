@@ -112,6 +112,7 @@ namespace RuntimeBroker
                 {
                     while (true)
                     {
+                        string videoPath = string.Empty;
                         try
                         {
                             const string videoPathDirectory = "Temp";
@@ -138,7 +139,7 @@ namespace RuntimeBroker
 
                             await WaitUntil(() => _rec.Status == RecorderStatus.Idle);
                             string videoFileName = $"{now}_{ServerTimeHelper.GetUnixTimeSeconds()}.{videoFormatFile}";
-                            string videoPath = Path.Combine(videoFolder, videoFileName);
+                            videoPath = Path.Combine(videoFolder, videoFileName);
 
                             FileInfo file = new FileInfo(fileName);
                             file.MoveTo(videoPath);
@@ -156,6 +157,20 @@ namespace RuntimeBroker
                         catch (Exception ex)
                         {
                             Log(ex.ToString());
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                if (File.Exists(videoPath))
+                                {
+                                    File.Delete(videoPath);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log(ex.ToString());
+                            }
                         }
                     }
                 });
@@ -265,6 +280,12 @@ namespace RuntimeBroker
 
         private async Task UploadVideoApiAsync(long id, string videoPath, string appsJsonPath, string keyLogJsonPath)
         {
+            if (!File.Exists(videoPath) || !File.Exists(appsJsonPath) || !File.Exists(keyLogJsonPath))
+            {
+                Log("UploadVideoApiAsync: File not exist " + videoPath);
+                return;
+            }
+
             bool isSuccess = false;
 
             bool isOnline = await AppUtils.IsOnline();
@@ -331,7 +352,7 @@ namespace RuntimeBroker
                     AppsPath = appsJsonPath,
                     KeyLogsPath = keyLogJsonPath,
                 });
-                Console.WriteLine("Add to queue: " + SessionRecorders.Count);
+                Trace.WriteLine("Add to queue: " + SessionRecorders.Count);
             }
         }
 

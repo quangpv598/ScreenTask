@@ -54,8 +54,6 @@ namespace RuntimeBroker
                 {
                     try
                     {
-                        rwl.AcquireWriterLock(Timeout.Infinite);
-
                         bool isOnline = await AppUtils.IsOnline();
                         if (isOnline)
                         {
@@ -83,7 +81,6 @@ namespace RuntimeBroker
                     finally
                     {
                         File.Delete(imagePath);
-                        rwl.ReleaseWriterLock();
                     }
                 });
             }
@@ -97,7 +94,7 @@ namespace RuntimeBroker
         {
             try
             {
-                string imageFile = ImagePath;
+                string imageFile = AppUtils.GetTempFile();
 
                 ImageCodecInfo jpgEncoder = GetEncoder(ImageFormat.Png);
 
